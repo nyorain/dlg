@@ -7,6 +7,8 @@
 
 #include <iostream>
 #include <sstream>
+#include <codecvt>
+#include <locale>
 #include "dlg.hpp"
 #include "color.hpp"
 
@@ -14,6 +16,8 @@
 	#define OS_UNIX
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define OS_WIN
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
 #else
 	#error Cannot determine platform
 #endif
@@ -24,6 +28,37 @@ StreamLogger defaultLogger {std::cout};
 Logger* defaultSelector(const Origin&)
 {
 	return &defaultLogger;
+}
+
+inline std::u16string toUtf16(const std::string& utf8)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+	return converter.from_bytes(utf8);
+}
+
+DLG_API void StreamLogger::write(const std::string& string)
+{
+	#ifdef OS_WIN
+		static const auto default_out_buf = std::cout.rdbuf();
+		static const auto default_err_buf = std::cerr.rdbuf();
+		static const auto default_log_buf = std::clog.rdbuf();
+
+		HANDLE handle;
+
+		if(ostream->rdbuf() == default_out_buf)
+			handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
+
+		if(ostream->rdbuf() == default_err_buf || os.rdbuf() == default_log_buf)
+			handle = ::GetStdHandle(STD_ERROR_HANDLE);
+
+		if(handle) {
+			auto str2 = nytl::toUtf16(string);
+			::WriteConsoleW(handle, str2.c_str(), str2.size(), nullptr, nullptr);
+			return;
+		}
+	#endif
+
+	*ostream << string;
 }
 
 DLG_API void Logger::output(const Origin& origin, std::string msg)

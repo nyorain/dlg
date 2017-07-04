@@ -64,7 +64,7 @@ public:
 class StreamLogger : public Logger {
 public:
 	StreamLogger(std::ostream& os) : ostream(&os) {}
-	void write(const std::string& string) override { *ostream << string; }
+	DLG_API void write(const std::string& string) override;
 	std::ostream* ostream;
 };
 
