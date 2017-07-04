@@ -106,7 +106,7 @@ DLG_API std::string source_string(const Source& src, std::string_view sep = "::"
 // Literals to easily create source or source level objects.
 // Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string to be logged");
 // Alternatively, a string can be parsed: dlg_log("my_project::my_module::my_scope"_src, "A string to be logged");
-// If you want to use those, 'use namespace dlg::literals'.
+// If you want to use those, 'using dlg::literals'.
 namespace literals {
 	inline Src<0> operator"" _src0(const char* s, std::size_t n) { return {{s, n}}; }
 	inline Src<1> operator""_src1(const char* s, std::size_t n) { return {{s, n}}; }
