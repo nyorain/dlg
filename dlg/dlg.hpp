@@ -20,7 +20,7 @@ namespace dlg {
 // Logging level/importance.
 // Use Level::warn for warnings e.g. deprecated or not implemented stuff.
 // Use Level::error for e.g. system errors, rather unexpected events that will have an effect
-// Use Level::critical for e.g. critical logic failures and really unexpected/impossible situations
+// Use Level::critical for e.g. critical logic failures and really impossible situations
 enum class Level {
 	trace = 0, // temporary used debug, e.g. to check if control reaches function
 	debug, // general debugging, prints e.g. all major events
@@ -30,10 +30,14 @@ enum class Level {
 	critical // fatal error; application is likely to crash/exit
 };
 
-inline bool operator<(Level a, Level b) { return static_cast<unsigned int>(a) < static_cast<unsigned int>(b); }
-inline bool operator<=(Level a, Level b) { return static_cast<unsigned int>(a) <= static_cast<unsigned int>(b); }
-inline bool operator>(Level a, Level b) { return static_cast<unsigned int>(a) > static_cast<unsigned int>(b); }
-inline bool operator>=(Level a, Level b) { return static_cast<unsigned int>(a) >= static_cast<unsigned int>(b); }
+inline bool operator<(Level a, Level b)
+	{ return static_cast<unsigned int>(a) < static_cast<unsigned int>(b); }
+inline bool operator<=(Level a, Level b)
+	{ return static_cast<unsigned int>(a) <= static_cast<unsigned int>(b); }
+inline bool operator>(Level a, Level b)
+	{ return static_cast<unsigned int>(a) > static_cast<unsigned int>(b); }
+inline bool operator>=(Level a, Level b)
+	{ return static_cast<unsigned int>(a) >= static_cast<unsigned int>(b); }
 
 // Object representing the ith level of an origin source.
 // Used as dummy objects detected by templates for the different source levels.
@@ -41,7 +45,7 @@ template<unsigned int I, typename = std::enable_if_t<I < 3>>
 struct Src { std::string_view name; };
 
 // Represents the source of a log/assertion call.
-// The string_view array represents the differents source levels, e.g. {"my_project", "my_class", "my_function"}.
+// The string_view array represents the differents source levels, e.g. {"proj", "class", "func"}.
 struct Source;
 
 // Parses a string like project::module::scope into a Source object.
@@ -52,7 +56,8 @@ DLG_API Source source(std::string_view str, std::string_view sep = "::");
 // Builds a source string from a given source up to the given lvl.
 // E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
 // would be 3, the source string would hold some_scope as well.
-DLG_API std::string source_string(const Source& src, std::string_view sep = "::", unsigned int lvl = 3u);
+DLG_API std::string source_string(const Source& src,
+	std::string_view sep = "::", unsigned int lvl = 3u);
 
 // Copies the valies src fields from src1 to src2, leaves the other ones untouched.
 // Only if override is false, will not override already set fields in src1.
@@ -66,7 +71,7 @@ struct Source {
 		src[I3] = src3.name;
 	}
 
-	Source(std::string_view name);
+	Source(std::string_view name, std::string_view sep = "::") { *this = source(name, sep); }
 	std::string_view src[3];
 };
 
@@ -92,7 +97,7 @@ public:
 // Logger implementation that simply writes a string to a given std::ostream.
 class StreamLogger : public Logger {
 public:
-	StreamLogger(std::ostream& os) : ostream(&os) {}
+	inline StreamLogger(std::ostream& os) : ostream(&os) {}
 	DLG_API void write(const std::string& string) override;
 	std::ostream* ostream;
 };
@@ -119,11 +124,15 @@ thread_local Source dlg_current_source {};
 // RAII guard that sets the thread_local source of dlg for its liftime.
 struct SourceGuard {
 	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
-	SourceGuard(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {}) : SourceGuard(Source{src1, src2, src3}) {}
-	SourceGuard(std::string_view name, bool full = false) : SourceGuard(Source{name}, full) {}
+	SourceGuard(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {})
+		: SourceGuard(Source{src1, src2, src3}) {}
+
+	SourceGuard(std::string_view name, bool full = false)
+		: SourceGuard(Source{name}, full) {}
 
 	DLG_API SourceGuard(Source source, bool full = false);
 	DLG_API ~SourceGuard();
+
 	SourceGuard(const SourceGuard&) = delete;
 	SourceGuard& operator=(const SourceGuard&) = delete;
 
@@ -131,8 +140,8 @@ struct SourceGuard {
 };
 
 // Literals to easily create source or source level objects.
-// Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string to be logged");
-// Alternatively, a string can be parsed: dlg_log("my_project::my_module::my_scope"_src, "A string to be logged");
+// Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string");
+// Alternatively, a string can be parsed: dlg_log("my_proj::my_mod::my_scope"_src, "A string");
 // If you want to use those, 'using namespace dlg::literals'.
 namespace literals {
 	inline Src<0> operator"" _src0(const char* s, std::size_t n) { return {{s, n}}; }
@@ -290,7 +299,8 @@ void do_log(std::string_view file, unsigned int line, Level level, Args&&... arg
 }
 
 template<typename... Args>
-void do_assert(std::string_view file, unsigned int line, Level level, const char* expr, Args&&... args)
+void do_assert(std::string_view file, unsigned int line, Level level,
+	const char* expr, Args&&... args)
 {
 	Origin origin = {file, line, level, {}};
 	origin.expr = expr;
@@ -299,7 +309,7 @@ void do_assert(std::string_view file, unsigned int line, Level level, const char
 
 } // namespace dlg
 
-#ifdef DLG_HEADER_ONLY
+#if DLG_HEADER_ONLY
 	#include "dlg.cpp"
 #endif
 
