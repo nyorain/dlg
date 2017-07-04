@@ -17,3 +17,5 @@ To do
 - [ ] windows text style support
 - [ ] assert without error message
 - [ ] add real example and screenshot
+- [ ] custom (changeable) base paths (for nested projects/header calls)
+- [ ] variable Src<I> count

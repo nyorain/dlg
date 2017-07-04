@@ -49,6 +49,11 @@ int main()
 		custom_assert(1 == 2, "uuuugh...");
 	});
 
+	{
+		dlg::SourceGuard guard("test"_scope, "my"_project);
+		dlg_info("just some {}", "source guard test");
+	}
+
 	dlg_log("Loggin is easy!");
 	dlg_assert(5 == 6, "render"_module, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
 	dlg_assert_debug(5 == 6, "ny::x11::data"_src, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");

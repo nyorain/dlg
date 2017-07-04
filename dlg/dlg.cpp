@@ -181,6 +181,24 @@ Selector& selector()
 	return selector;
 }
 
+DLG_API SourceGuard::SourceGuard(Source source, bool full) : old(dlg_current_source)
+{
+	if(full) {
+		dlg_current_source = source;
+		return;
+	}
+
+	for(auto i = 0u; i < 3u; ++i) {
+		if(!source.src[i].empty())
+			dlg_current_source.src[i] = source.src[i];
+	}
+}
+
+DLG_API SourceGuard::~SourceGuard()
+{
+	dlg_current_source = old;
+}
+
 } // namespace dlg
 
 #endif // header guard

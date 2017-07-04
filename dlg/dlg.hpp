@@ -35,9 +35,34 @@ inline bool operator<=(Level a, Level b) { return static_cast<unsigned int>(a) <
 inline bool operator>(Level a, Level b) { return static_cast<unsigned int>(a) > static_cast<unsigned int>(b); }
 inline bool operator>=(Level a, Level b) { return static_cast<unsigned int>(a) >= static_cast<unsigned int>(b); }
 
+// Object representing the ith level of an origin source.
+// Used as dummy objects detected by templates for the different source levels.
+template<unsigned int I, typename = std::enable_if_t<I < 3>>
+struct Src { std::string_view name; };
+
 // Represents the source of a log/assertion call.
 // The string_view array represents the differents source levels, e.g. {"my_project", "my_class", "my_function"}.
+struct Source;
+
+// Parses a string like project::module::scope into a Source object.
+// Separator is defaulted to "::" and represents the separator between the source scopes.
+// E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
+DLG_API Source source(std::string_view str, std::string_view sep = "::");
+
+// Builds a source string from a given source up to the given lvl.
+// E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
+// would be 3, the source string would hold some_scope as well.
+DLG_API std::string source_string(const Source& src, std::string_view sep = "::", unsigned int lvl = 3u);
+
 struct Source {
+	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
+	Source(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {}) {
+		src[I1] = src1.name;
+		src[I2] = src2.name;
+		src[I3] = src3.name;
+	}
+
+	Source(std::string_view name);
 	std::string_view src[3];
 };
 
@@ -82,31 +107,29 @@ Selector selector(Selector set);
 /// Receives the current selector.
 Selector& selector();
 
-// thread local variables that can be set to the current source
-// even if they are set they can be overriden when logging, they just
-// server as fallback.
-thread_local const char* dlg_current_src0 = nullptr;
-thread_local const char* dlg_current_src1 = nullptr;
-thread_local const char* dlg_current_src2 = nullptr;
+// thread local variable that can be set to the current source
+// even if the source levels are set they can be overriden when logging, they just
+// serve as fallback.
+thread_local Source dlg_current_source {};
 
-// Object representing the ith level of an origin source.
-// Used as dummy objects detected by templates for the different source levels.
-template<unsigned int> struct Src {std::string_view name; };
+// RAII guard that sets the thread_local source of dlg for its liftime.
+struct SourceGuard {
+	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
+	SourceGuard(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {}) : SourceGuard(Source{src1, src2, src3}) {}
+	SourceGuard(std::string_view name, bool full = false) : SourceGuard(Source{name}, full) {}
 
-// Parses a string like project::module::scope into a Source object.
-// Separator is defaulted to "::" and represents the separator between the source scopes.
-// E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
-DLG_API Source source(std::string_view str, std::string_view sep = "::");
+	DLG_API SourceGuard(Source source, bool full = false);
+	DLG_API ~SourceGuard();
+	SourceGuard(const SourceGuard&) = delete;
+	SourceGuard& operator=(const SourceGuard&) = delete;
 
-// Builds a source string from a given source up to the given lvl.
-// E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
-// would be 3, the source string would hold some_scope as well.
-DLG_API std::string source_string(const Source& src, std::string_view sep = "::", unsigned int lvl = 3u);
+	Source old {};
+};
 
 // Literals to easily create source or source level objects.
 // Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string to be logged");
 // Alternatively, a string can be parsed: dlg_log("my_project::my_module::my_scope"_src, "A string to be logged");
-// If you want to use those, 'using dlg::literals'.
+// If you want to use those, 'using namespace dlg::literals'.
 namespace literals {
 	inline Src<0> operator"" _src0(const char* s, std::size_t n) { return {{s, n}}; }
 	inline Src<1> operator""_src1(const char* s, std::size_t n) { return {{s, n}}; }
@@ -195,9 +218,8 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 #if DLG_CHECK
 	#define dlg_check_unnamed(code) { code }
 	#define dlg_check(scope, code) {  \
-		dlg::dlg_current_src2 = scope; \
+		::dlg::SourceGuard dlg_check_scope_guard{::dlg::Src<2>{scope}}; \
 		code \
-		dlg::dlg_current_src2 = nullptr; \
 	}
 #else
 	#define dlg_check_unnamed(code)
@@ -250,14 +272,14 @@ void output(Origin& origin, Args&&... args)
 	if(!logger)
 		return;
 
-	if(origin.source.src[0].empty() && dlg_current_src0)
-		origin.source.src[0] = dlg_current_src0;
+	if(origin.source.src[0].empty() && !dlg_current_source.src[0].empty())
+		origin.source.src[0] = dlg_current_source.src[0];
 
-	if(origin.source.src[1].empty() && dlg_current_src1)
-		origin.source.src[1] = dlg_current_src1;
+	if(origin.source.src[1].empty() && !dlg_current_source.src[1].empty())
+		origin.source.src[1] = dlg_current_source.src[1];
 
-	if(origin.source.src[2].empty() && dlg_current_src2)
-		origin.source.src[2] = dlg_current_src2;
+	if(origin.source.src[2].empty() && !dlg_current_source.src[2].empty())
+		origin.source.src[2] = dlg_current_source.src[2];
 
 	auto content = fmt::format(std::forward<Args>(args)...);
 	logger->output(origin, content);
