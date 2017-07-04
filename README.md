@@ -13,6 +13,8 @@ To do
 - [ ] rework/further strip fmt.hpp
 	- [ ] since it is parsed to some type-erased list anyways, don't include the whole header
 	- [ ] constexpr string parsing
+		- [ ] warn about format issues
+		- [ ] warn about unused but passed variables
 - [ ] windows utf-8 output (see ny)
 - [ ] windows text style support
 - [ ] assert without error message

@@ -80,7 +80,7 @@
 
 
 // DLG_HEADER_ONLY
-#ifndef DLG_HEDAER_ONLY
+#ifndef DLG_HEADER_ONLY
 	#define DLG_HEADER_ONLY 1
 #endif
 
