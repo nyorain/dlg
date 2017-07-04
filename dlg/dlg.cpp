@@ -91,7 +91,7 @@ DLG_API Source source(std::string_view str, std::string_view sep) {
 		if(pos == str.npos)
 			return ret;
 
-		str.remove_prefix(pos + 2);
+		str.remove_prefix(pos + sep.length());
 	}
 
 	return ret;

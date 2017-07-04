@@ -277,7 +277,7 @@ void output(Origin& origin, Src<2> src2, Args&&... args)
 template<typename... Args>
 void output(Origin& origin, Source src, Args&&... args)
 {
-	origin.source = src;
+	apply_source(src, origin.source, true);
 	output(origin, std::forward<Args>(args)...);
 }
 
