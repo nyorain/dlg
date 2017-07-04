@@ -5,9 +5,11 @@
 // Central configuration macros:
 // - DLG_DEBUG (0 or 1), determines defaults for config below, defaulted to !NDEBUG
 // - DLG_CHECK (0 or 1), if defined, dlg_check scopes will be executed, defaulted to DLG_DEBUG
-// - DLG_LOG_LEVEL [0;6], the minimum log level (the lower it is the more logs will be evaluated)
+// - DLG_LOG_LEVEL [0;6], the minimum log level
+//   - the lower it is the more logs will be evaluated
 //   - default: DLG_DEBUG ? trace : info
-// - DLG_ASSERT_LEVEL [0;6], the minimum assert level (the lower it is the more assertions will be evaluated)
+// - DLG_ASSERT_LEVEL [0;6], the minimum assert level
+//   - the lower it is the more assertions will be evaluated
 //   - default: DLG_DEBUG ? trace : info
 //   - note that there are no trace or info assertions, so not all levels make sense here
 // - DLG_DEFAULT_LOG, one of the (lowercase) log levels, Will be used for the dlg_log default macro
@@ -22,6 +24,8 @@
 //   - relative beginnings of __FILE__ will always be stripped away
 //   - makes sense to define this on a per-project level, should end with a '/' character
 // - DLG_HEADER_ONLY, if set to 1 includes the source files inline, defaulted to 1
+//   - even when using dlg in header only mode, one file must #define DLG_IMPLEMENTATION
+//     before including for the global symbols
 
 #ifndef DLG_CONFIG_HPP
 #define DLG_CONFIG_HPP

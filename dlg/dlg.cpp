@@ -24,12 +24,6 @@
 
 namespace dlg {
 
-StreamLogger defaultLogger {std::cout};
-Logger* defaultSelector(const Origin&)
-{
-	return &defaultLogger;
-}
-
 inline std::u16string toUtf16(const std::string& utf8)
 {
 	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
@@ -182,25 +176,39 @@ Selector selector(Selector set)
 	return cpy;
 }
 
-Selector& selector()
+Logger* defaultSelector(const Origin&)
 {
-	static Selector selector = &defaultSelector;
-	return selector;
+	return &defaultLogger;
 }
 
-DLG_API SourceGuard::SourceGuard(Source source, bool full) : old(dlg_current_source)
+#if defined(DLG_IMPLEMENTATION) || !DLG_HEADER_ONLY
+	StreamLogger defaultLogger {std::cout};
+	Selector& selector()
+	{
+		static Selector selector = &defaultSelector;
+		return selector;
+	}
+
+	Source& current_source()
+	{
+		thread_local Source source = {};
+		return source;
+	}
+#endif
+
+DLG_API SourceGuard::SourceGuard(Source source, bool full) : old(current_source())
 {
 	if(full) {
-		dlg_current_source = source;
+		current_source() = source;
 		return;
 	}
 
-	apply_source(source, dlg_current_source);
+	apply_source(source, current_source());
 }
 
 DLG_API SourceGuard::~SourceGuard()
 {
-	dlg_current_source = old;
+	current_source() = old;
 }
 
 } // namespace dlg

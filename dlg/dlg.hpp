@@ -116,10 +116,13 @@ Selector selector(Selector set);
 /// Receives the current selector.
 Selector& selector();
 
-// thread local variable that can be set to the current source
+// thread local static variable getter that can be set to the current source.
 // even if the source levels are set they can be overriden when logging, they just
 // serve as fallback.
-thread_local Source dlg_current_source {};
+Source& current_source();
+
+/// Default stream logger returned by the default selector.
+extern StreamLogger defaultLogger;
 
 // RAII guard that sets the thread_local source of dlg for its liftime.
 struct SourceGuard {
@@ -285,7 +288,7 @@ void output(Origin& origin, Args&&... args)
 	if(!logger)
 		return;
 
-	apply_source(dlg_current_source, origin.source, false);
+	apply_source(current_source(), origin.source, false);
 	auto content = fmt::format(std::forward<Args>(args)...);
 	logger->output(origin, content);
 }

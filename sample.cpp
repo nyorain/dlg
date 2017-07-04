@@ -3,6 +3,8 @@
 #include <sstream>
 #include <functional>
 #include <cstring>
+
+#define DLG_IMPLEMENTATION
 #include "dlg/dlg.hpp"
 
 using namespace dlg::literals;
