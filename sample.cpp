@@ -7,10 +7,13 @@
 
 using namespace dlg::literals;
 
+#define custom_trace(...) dlg_trace("sample"_project, "custom_trace"_scope, __VA_ARGS__)
+#define custom_assert(expr, ...) dlg_assert(expr, "sample"_project, "custom_assert"_scope, __VA_ARGS__)
+
 dlg::Logger* mySelector(dlg::Origin origin)
 {
-	if(origin.level == dlg::Level::trace || (origin.source.src[1] == "render"))
-		return nullptr;
+	// if(origin.level == dlg::Level::trace || (origin.source.src[1] == "render"))
+	// 	return nullptr;
 
 	return &dlg::defaultLogger;
 }
@@ -36,10 +39,14 @@ int main()
 	dlg_error("error {}", 5);
 	dlg_critical("render"_module, "critical {}", 6);
 
+	custom_trace("some custom trace");
+
 	std::cout << "just some normal output\n";
 
 	dlg_check("main_debug:1", {
 		dlg_assert(5 == 6, "assert failed");
+		custom_assert(1 == 1, "you should really not see this");
+		custom_assert(1 == 2, "uuuugh...");
 	});
 
 	dlg_log("Loggin is easy!");
