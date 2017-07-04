@@ -19,3 +19,5 @@ To do
 - [ ] add real example and screenshot
 - [ ] custom (changeable) base paths (for nested projects/header calls)
 - [ ] variable Src<I> count
+- [ ] possibility to get current scope (or more general: exception support)
+- [ ] make default scope signs customizable by macro

@@ -121,6 +121,13 @@ DLG_API std::string source_string(const Source& src, std::string_view sep, unsig
 	return ret;
 }
 
+DLG_API void apply_source(const Source& src1, Source& src2, bool force)
+{
+	for(auto i = 0u; i < 3u; ++i)
+		if((src2.src[i].empty() || force) && !src1.src[i].empty())
+			src2.src[i] = src1.src[i];
+}
+
 DLG_API std::string_view strip_path(std::string_view file, std::string_view base)
 {
 	if(file.empty())
@@ -188,10 +195,7 @@ DLG_API SourceGuard::SourceGuard(Source source, bool full) : old(dlg_current_sou
 		return;
 	}
 
-	for(auto i = 0u; i < 3u; ++i) {
-		if(!source.src[i].empty())
-			dlg_current_source.src[i] = source.src[i];
-	}
+	apply_source(source, dlg_current_source);
 }
 
 DLG_API SourceGuard::~SourceGuard()

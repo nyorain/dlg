@@ -54,6 +54,10 @@ DLG_API Source source(std::string_view str, std::string_view sep = "::");
 // would be 3, the source string would hold some_scope as well.
 DLG_API std::string source_string(const Source& src, std::string_view sep = "::", unsigned int lvl = 3u);
 
+// Copies the valies src fields from src1 to src2, leaves the other ones untouched.
+// Only if override is false, will not override already set fields in src1.
+DLG_API void apply_source(const Source& src1, Source& src2, bool force = true);
+
 struct Source {
 	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
 	Source(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {}) {
@@ -272,15 +276,7 @@ void output(Origin& origin, Args&&... args)
 	if(!logger)
 		return;
 
-	if(origin.source.src[0].empty() && !dlg_current_source.src[0].empty())
-		origin.source.src[0] = dlg_current_source.src[0];
-
-	if(origin.source.src[1].empty() && !dlg_current_source.src[1].empty())
-		origin.source.src[1] = dlg_current_source.src[1];
-
-	if(origin.source.src[2].empty() && !dlg_current_source.src[2].empty())
-		origin.source.src[2] = dlg_current_source.src[2];
-
+	apply_source(dlg_current_source, origin.source, false);
 	auto content = fmt::format(std::forward<Args>(args)...);
 	logger->output(origin, content);
 }

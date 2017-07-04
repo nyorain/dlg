@@ -50,7 +50,8 @@ int main()
 	});
 
 	{
-		dlg::SourceGuard guard("test"_scope, "my"_project);
+		dlg::SourceGuard guard1("my"_project);
+		dlg::SourceGuard guard("::mod::scope"_src);
 		dlg_info("just some {}", "source guard test");
 	}
 
