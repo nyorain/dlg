@@ -63,7 +63,7 @@ DLG_API void Logger::output(const Origin& origin, std::string msg)
 		sstream << apply(textStyles[static_cast<unsigned int>(origin.level)]);
 		sstream << "[";
 
-		auto src = source_string(origin.source, "::", 2);
+		auto src = source_string(origin.source);
 		if(!src.empty())
 			sstream << src << " | ";
 
