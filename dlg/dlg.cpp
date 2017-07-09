@@ -63,10 +63,9 @@ DLG_API void Logger::output(const Origin& origin, std::string msg)
 		sstream << apply(textStyles[static_cast<unsigned int>(origin.level)]);
 		sstream << "[";
 
-		// Uncomment this to output the scope in the default logger format
-		// auto src = source_string(origin.source);
-		// if(!src.empty())
-		// 	sstream << src << " | ";
+		auto src = source_string(origin.source, "::", 2);
+		if(!src.empty())
+			sstream << src << " | ";
 
 		sstream << origin.file << ":" << origin.line;
 		sstream << "] ";
@@ -104,12 +103,12 @@ DLG_API std::string source_string(const Source& src, std::string_view sep, unsig
 
 	bool first = true;
 	lvl = std::min(lvl, 3u);
-	for(auto i = 0u; i < 3u; ++i) {
-		auto lvl = src.src[i];
-		if(!lvl.empty()) {
+	for(auto i = 0u; i < lvl; ++i) {
+		auto level = src.src[i];
+		if(!level.empty()) {
 			if(first) first = false;
 			else ret += sep;
-			ret += lvl;
+			ret += level;
 		}
 	}
 

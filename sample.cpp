@@ -45,7 +45,7 @@ int main()
 
 	std::cout << "just some normal output\n";
 
-	dlg_check("main_debug:1", {
+	dlg_check("main::main_debug::e1"_src, {
 		dlg_assert(5 == 6, "assert failed");
 		custom_assert(1 == 1, "you should really not see this");
 		custom_assert(1 == 2, "uuuugh...");

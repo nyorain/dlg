@@ -168,37 +168,37 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 #if DLG_LOG_LEVEL <= DLG_LEVEL_TRACE
 	#define dlg_trace(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::trace, __VA_ARGS__)
 #else
-	#define dlg_trace(...)
+	#define dlg_trace(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_DEBUG
 	#define dlg_debug(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::debug, __VA_ARGS__)
 #else
-	#define dlg_debug(...)
+	#define dlg_debug(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_INFO
 	#define dlg_info(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::info, __VA_ARGS__)
 #else
-	#define dlg_info(...)
+	#define dlg_info(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_WARN
 	#define dlg_warn(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::warn, __VA_ARGS__)
 #else
-	#define dlg_warn(...)
+	#define dlg_warn(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_ERROR
 	#define dlg_error(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::error, __VA_ARGS__)
 #else
-	#define dlg_error(...)
+	#define dlg_error(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_CRITICAL
 	#define dlg_critical(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::critical, __VA_ARGS__)
 #else
-	#define dlg_critical(...)
+	#define dlg_critical(...) {}
 #endif
 
 // -- Assertion macros --
@@ -206,40 +206,40 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 	#define dlg_assert_debug(expr, ...) \
 		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::debug, #expr, __VA_ARGS__)
 #else
-	#define dlg_assert_debug(expr, ...)
+	#define dlg_assert_debug(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_WARN
 	#define dlg_assert_warn(expr, ...) \
 		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::warn, #expr, __VA_ARGS__)
 #else
-	#define dlg_assert_warn(expr, ...)
+	#define dlg_assert_warn(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_ERROR
 	#define dlg_assert_error(expr, ...) \
 		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::error, #expr, __VA_ARGS__)
 #else
-	#define dlg_assert_error(expr, ...)
+	#define dlg_assert_error(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_CRITICAL
 	#define dlg_assert_critical(expr, ...) \
 		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::critical, #expr, __VA_ARGS__)
 #else
-	#define dlg_assert_critical(expr, ...)
+	#define dlg_assert_critical(expr, ...) {}
 #endif
 
 // -- Debug check scope --
 #if DLG_CHECK
 	#define dlg_check_unnamed(code) { code }
 	#define dlg_check(scope, code) {  \
-		::dlg::SourceGuard dlg_check_scope_guard{::dlg::Src<2>{scope}}; \
+		::dlg::SourceGuard dlg_check_scope_guard(scope); \
 		code \
 	}
 #else
-	#define dlg_check_unnamed(code)
-	#define dlg_check(scope, code)
+	#define dlg_check_unnamed(code) {}
+	#define dlg_check(scope, code) {}
 #endif
 
 // -- Utility macro magic --
