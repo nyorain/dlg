@@ -4,7 +4,7 @@ dlg
 Just another (soon-to-be-)lightweight logging library for c++.
 Uses a slightly stripped version libfmt at the moment.
 Name stands for some kind of super clever word mixture of the words 'debug' and 'log'.
-Not real windows support yet.
+No real windows support yet.
 
 To do
 =====
@@ -20,6 +20,6 @@ To do
 - [ ] assert without error message
 - [ ] add real example and screenshot
 - [ ] custom (changeable) base paths (for nested projects/header calls)
-- [ ] variable Src<I> count
+- [ ] dynamic/variable Src<I> count
 - [ ] possibility to get current scope (or more general: exception support)
 - [ ] make default scope signs customizable by macro
