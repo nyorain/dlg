@@ -155,17 +155,24 @@ public:
 // Can e.g. use the origin to channel different origins to different outputs.
 using Selector = std::function<Logger*(const Origin&)>;
 
-/// Sets a new Selector. Must be valid i.e. not an empty std::function object.
-/// Returns the old selector.
+// Sets a new Selector. Must be valid i.e. not an empty std::function object.
+// Returns the old selector.
 Selector selector(Selector set);
 
-/// Receives the current selector.
+// Receives the current selector.
 Selector& selector();
+
+// Used to store a currently set source.
+// Might also hold __FUNC__ in which the source was set to only
+// apply it to the given function.
+struct CurrentSource : Source {
+	const char* func;
+};
 
 // thread local static variable getter that can be set to the current source.
 // even if the source levels are set they can be overriden when logging, they just
 // serve as fallback.
-Source& current_source();
+CurrentSource& current_source();
 
 // Constructs a source object that clears any applied source.
 inline Source clear_source()
@@ -180,13 +187,17 @@ extern StreamLogger defaultLogger;
 
 // RAII guard that sets the thread_local source of dlg for its liftime.
 struct SourceGuard {
-	DLG_API SourceGuard(const Source& source);
+	// Constructs a new source guard for the given source.
+	// Will apply the given source as current source for the liftime of this gurad.
+	// Will apply it to current source with the given force. If only_this_function
+	// is a valid value, the source guard will only be active in the current function.
+	DLG_API SourceGuard(const Source& source, const char* func = nullptr);
 	DLG_API ~SourceGuard();
 
 	SourceGuard(const SourceGuard&) = delete;
 	SourceGuard& operator=(const SourceGuard&) = delete;
 
-	Source old {};
+	CurrentSource old {};
 };
 
 // Literals to easily create source or source level objects.
@@ -213,37 +224,37 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 
 // -- Logging macros --
 #if DLG_LOG_LEVEL <= DLG_LEVEL_TRACE
-	#define dlg_trace(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::trace, __VA_ARGS__)
+	#define dlg_trace(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::trace, __VA_ARGS__)
 #else
 	#define dlg_trace(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_DEBUG
-	#define dlg_debug(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::debug, __VA_ARGS__)
+	#define dlg_debug(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::debug, __VA_ARGS__)
 #else
 	#define dlg_debug(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_INFO
-	#define dlg_info(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::info, __VA_ARGS__)
+	#define dlg_info(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::info, __VA_ARGS__)
 #else
 	#define dlg_info(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_WARN
-	#define dlg_warn(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::warn, __VA_ARGS__)
+	#define dlg_warn(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::warn, __VA_ARGS__)
 #else
 	#define dlg_warn(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_ERROR
-	#define dlg_error(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::error, __VA_ARGS__)
+	#define dlg_error(...) dlg::do_log(DLG_FILE, __LINE__,  __FUNCTION__, dlg::Level::error, __VA_ARGS__)
 #else
 	#define dlg_error(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_CRITICAL
-	#define dlg_critical(...) dlg::do_log(DLG_FILE, __LINE__, dlg::Level::critical, __VA_ARGS__)
+	#define dlg_critical(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::critical, __VA_ARGS__)
 #else
 	#define dlg_critical(...) {}
 #endif
@@ -251,28 +262,28 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 // -- Assertion macros --
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_DEBUG
 	#define dlg_assert_debug(expr, ...) \
-		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::debug, #expr, __VA_ARGS__)
+		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::debug, #expr, __VA_ARGS__)
 #else
 	#define dlg_assert_debug(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_WARN
 	#define dlg_assert_warn(expr, ...) \
-		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::warn, #expr, __VA_ARGS__)
+		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::warn, #expr, __VA_ARGS__)
 #else
 	#define dlg_assert_warn(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_ERROR
 	#define dlg_assert_error(expr, ...) \
-		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::error, #expr, __VA_ARGS__)
+		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::error, #expr, __VA_ARGS__)
 #else
 	#define dlg_assert_error(expr, ...) {}
 #endif
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_CRITICAL
 	#define dlg_assert_critical(expr, ...) \
-		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, dlg::Level::critical, #expr, __VA_ARGS__)
+		if(!(expr)) dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::critical, #expr, __VA_ARGS__)
 #else
 	#define dlg_assert_critical(expr, ...) {}
 #endif
@@ -288,6 +299,10 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 	#define dlg_check_unnamed(code) {}
 	#define dlg_check(scope, code) {}
 #endif
+
+// -- Scope guard macros
+#define dlg_source(...) ::dlg::SourceGuard _dlg_local_source_guard({__VA_ARGS__}, __FUNCTION__);
+#define dlg_source_global(...) ::dlg::SourceGuard _dlg_local_source_guard({__VA_ARGS__});
 
 // -- Utility macro magic --
 #define DLG_MM_PASTE(x,y) x ## _ ## y
@@ -341,20 +356,24 @@ void output(Origin& origin, Args&&... args)
 
 // -- Macro functions --
 template<typename... Args>
-void do_log(std::string_view file, unsigned int line, Level level, Args&&... args)
+void do_log(std::string_view file, unsigned int line, std::string_view func,
+		Level level, Args&&... args)
 {
 	Origin origin = {file, line, level, {}};
-	apply_source(current_source(), origin.source);
+	if(!current_source().func || func == current_source().func)
+		apply_source(current_source(), origin.source);
+
 	output(origin, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-void do_assert(std::string_view file, unsigned int line, Level level,
-	const char* expr, Args&&... args)
+void do_assert(std::string_view file, unsigned int line, std::string_view func,
+	Level level, const char* expr, Args&&... args)
 {
-	Origin origin = {file, line, level, {}};
-	origin.expr = expr;
-	apply_source(current_source(), origin.source);
+	Origin origin = {file, line, level, {}, expr};
+	if(!current_source().func || func == current_source().func)
+		apply_source(current_source(), origin.source);
+
 	output(origin, std::forward<Args>(args)...);
 }
 

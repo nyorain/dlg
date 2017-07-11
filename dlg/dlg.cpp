@@ -199,16 +199,17 @@ Logger* defaultSelector(const Origin&)
 		return selector;
 	}
 
-	Source& current_source()
+	CurrentSource& current_source()
 	{
-		thread_local Source source = {};
+		thread_local CurrentSource source = {};
 		return source;
 	}
 #endif
 
-DLG_API SourceGuard::SourceGuard(const Source& source) : old(current_source())
+DLG_API SourceGuard::SourceGuard(const Source& source, const char* func) : old(current_source())
 {
 	apply_source(source, current_source());
+	current_source().func = func;
 }
 
 DLG_API SourceGuard::~SourceGuard()

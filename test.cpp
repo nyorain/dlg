@@ -10,12 +10,26 @@ dlg::Logger* mySelector(dlg::Origin origin)
 		std::cout << "0: '" << origin.source.src[0] << "' != '" << expected.src[0] << "'\n";
 
 	if(origin.source.src[1] != expected.src[1])
-		std::cout << "0: '" << origin.source.src[1] << "' != '" << expected.src[1] << "'\n";
+		std::cout << "1: '" << origin.source.src[1] << "' != '" << expected.src[1] << "'\n";
 
 	if(origin.source.src[2] != expected.src[2])
-		std::cout << "0: '" << origin.source.src[2] << "' != '" << expected.src[2] << "'\n";
+		std::cout << "2: '" << origin.source.src[2] << "' != '" << expected.src[2] << "'\n";
 
 	return nullptr;
+}
+
+void func1()
+{
+	dlg::SourceGuard guard2({"func"_scope, dlg::Source::Force::full});
+	expected.src[0] = "";
+	expected.src[1] = "";
+	expected.src[2] = "func";
+	dlg_log("just some test");
+}
+
+void func2()
+{
+	dlg_log("just some test");
 }
 
 int main()
@@ -61,5 +75,29 @@ int main()
 		dlg_debug(dlg::clear_source(), "mscope"_scope, "just some test");
 	}
 
-	dlg::SourceGuard guard2({"test"_module, "my"_scope});
+	{
+		dlg::SourceGuard guard2({"test"_module, "my"_scope});
+		func1();
+	}
+
+	{
+		dlg_source("test"_module, "main"_scope);
+		expected.src[0] = "";
+		expected.src[1] = "test";
+		expected.src[2] = "main";
+		dlg_log("just some test");
+
+		expected.src[0] = "";
+		expected.src[1] = "";
+		expected.src[2] = "";
+		func2();
+	}
+
+	{
+		expected.src[0] = "main";
+		expected.src[1] = "dunno";
+		expected.src[2] = "";
+		dlg_source_global("main::dunno"_src);
+		func2();
+	}
 }
