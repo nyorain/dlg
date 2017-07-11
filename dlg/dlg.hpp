@@ -168,7 +168,7 @@ Selector& selector();
 Source& current_source();
 
 // Constructs a source object that clears any applied source.
-Source clear_source()
+inline Source clear_source()
 {
 	Source s;
 	s.force = Source::Force::full;
