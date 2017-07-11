@@ -81,8 +81,9 @@ DLG_API void Logger::output(const Origin& origin, std::string msg)
 	write(sstream.str());
 }
 
-DLG_API Source source(std::string_view str, std::string_view sep) {
+DLG_API Source source(std::string_view str, Source::Force force, std::string_view sep) {
 	Source ret {};
+	ret.force = force;
 
 	for(auto i = 0u; i < 3; ++i) {
 		auto pos = str.find(sep);
@@ -97,7 +98,7 @@ DLG_API Source source(std::string_view str, std::string_view sep) {
 	return ret;
 }
 
-DLG_API std::string source_string(const Source& src, std::string_view sep, unsigned int lvl) {
+DLG_API std::string source_string(const Source& src, unsigned int lvl, std::string_view sep) {
 	std::string ret;
 	ret.reserve(50);
 
@@ -115,10 +116,19 @@ DLG_API std::string source_string(const Source& src, std::string_view sep, unsig
 	return ret;
 }
 
-DLG_API void apply_source(const Source& src1, Source& src2, bool force)
+DLG_API void apply_source(const Source& src1, Source& src2, Source::Force force)
 {
+	using F = Source::Force;
+	if(force == F::none)
+		force = src1.force;
+
+	if(force == F::full) {
+		src2.src = src1.src;
+		return;
+	}
+
 	for(auto i = 0u; i < 3u; ++i)
-		if((src2.src[i].empty() || force) && !src1.src[i].empty())
+		if(!src1.src[i].empty() && (src2.src[i].empty() || force == F::override))
 			src2.src[i] = src1.src[i];
 }
 
@@ -196,13 +206,8 @@ Logger* defaultSelector(const Origin&)
 	}
 #endif
 
-DLG_API SourceGuard::SourceGuard(Source source, bool full) : old(current_source())
+DLG_API SourceGuard::SourceGuard(const Source& source) : old(current_source())
 {
-	if(full) {
-		current_source() = source;
-		return;
-	}
-
 	apply_source(source, current_source());
 }
 

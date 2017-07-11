@@ -14,12 +14,13 @@
 //   - note that there are no trace or info assertions, so not all levels make sense here
 // - DLG_DEFAULT_LOG, one of the (lowercase) log levels, Will be used for the dlg_log default macro
 //   - defaulted to debug
-// - DLG_DEFAULT_ASSERT, one of the (lowercase) log levels, Will be used for the dlg_assert default macro
+// - DLG_DEFAULT_ASSERT, one of the (lowercase) log levels, used for the dlg_assert default macro
 //   - defaulted to error
+// - DLG_DEFAULT_SEP the default separator to use to parse and output a source, "::" by default
 // - DLG_FILE, the current file, defined as dlg::stripPath(__FILE__) per default
 //   - if this is defined it will be use instead of stripping the __FILE__ macro
 //   - may e.g. be set from the build system for custom file paths
-// - DLG_BASE_PATH, the base path stripped away from the __FILE__ values, defined as empty string by default
+// - DLG_BASE_PATH, the base path stripped away from the __FILE__ values, empty string by default
 //   - is not used if DLG_FILE has a custom value set
 //   - relative beginnings of __FILE__ will always be stripped away
 //   - makes sense to define this on a per-project level, should end with a '/' character
@@ -74,6 +75,10 @@
 	#define DLG_DEFAULT_ASSERT error
 #endif
 
+#ifndef DLG_DEFAULT_SEP
+	#define DLG_DEFAULT_SEP "::"
+#endif
+
 // DLG_FILE
 #ifndef DLG_FILE
 	#ifndef DLG_BASE_PATH
@@ -81,7 +86,6 @@
 	#endif
 	#define DLG_FILE ::dlg::strip_path(__FILE__, DLG_BASE_PATH)
 #endif
-
 
 // DLG_HEADER_ONLY
 #ifndef DLG_HEADER_ONLY

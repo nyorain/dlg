@@ -11,6 +11,7 @@
 #include <functional>
 #include <ostream>
 #include <string>
+#include <array>
 
 #include "fmt.hpp"
 #include "config.hpp"
@@ -44,35 +45,58 @@ inline bool operator>=(Level a, Level b)
 template<unsigned int I, typename = std::enable_if_t<I < 3>>
 struct Src { std::string_view name; };
 
-// Represents the source of a log/assertion call.
+// Represents a source name for a call to log/assert.
 // The string_view array represents the differents source levels, e.g. {"proj", "class", "func"}.
-struct Source;
-
-// Parses a string like project::module::scope into a Source object.
-// Separator is defaulted to "::" and represents the separator between the source scopes.
-// E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
-DLG_API Source source(std::string_view str, std::string_view sep = "::");
-
-// Builds a source string from a given source up to the given lvl.
-// E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
-// would be 3, the source string would hold some_scope as well.
-DLG_API std::string source_string(const Source& src,
-	std::string_view sep = "::", unsigned int lvl = 3u);
-
-// Copies the valies src fields from src1 to src2, leaves the other ones untouched.
-// Only if override is false, will not override already set fields in src1.
-DLG_API void apply_source(const Source& src1, Source& src2, bool force = true);
-
 struct Source {
-	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
-	Source(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {}) {
+	// Specifies in which way a source should be applied.
+	enum class Force {
+		// Unspecified, meta value
+		none = 0,
+
+		// Only non-empty src levels are applied to empty dst levels.
+		no_override,
+
+		// All non-empty src levels are applied, they may override
+		override,
+
+		// All src levels are applied, i.e. the source if fully assigned.
+		full
+	};
+
+	template<unsigned int I1 = 0>
+	Source(Src<I1> src1 = {}, Force f = Force::override) {
+		src[I1] = src1.name;
+		force = f;
+	}
+
+	template<unsigned int I1, unsigned int I2>
+	Source(Src<I1> src1, Src<I2> src2, Force f = Force::override) {
+		src[I1] = src1.name;
+		src[I2] = src2.name;
+		force = f;
+	}
+
+	template<unsigned int I1, unsigned int I2, unsigned int I3>
+	Source(Src<I1> src1, Src<I2> src2, Src<I3> src3, Force f = Force::override) {
 		src[I1] = src1.name;
 		src[I2] = src2.name;
 		src[I3] = src3.name;
+		force = f;
 	}
 
-	Source(std::string_view name, std::string_view sep = "::") { *this = source(name, sep); }
-	std::string_view src[3];
+	Source(std::string_view name, Force force = Force::override,
+			std::string_view sep = DLG_DEFAULT_SEP);
+
+	// Represents the source levels.
+	// Usually src[0] is project level, src[1] module level and src[2] scope level.
+	// E.g. something like {"dlg", "Source", "Source"} for the sources constructor,
+	// but they can also be used in a more abstract matter (i.e. grouping different
+	// parts of a project independent from class/file/function).
+	std::array<std::string_view, 3> src {};
+
+	// In which way this source is applied.
+	// The attribute is only used in certain source object usages.
+	Force force {Force::override};
 };
 
 // Whole origin of a log/assertion call.
@@ -83,6 +107,30 @@ struct Origin {
 	Source source;
 	std::string_view expr = nullptr; // assertion expression, nullptr for logging
 };
+
+// Copies the valies src fields from src1 to src2, leaves the other ones untouched.
+// Only if override is false, will not override already set fields in src1.
+// The Force parameter can be used to override the force used to apply the source,
+// if it is Force::none the force value from src1 will be used.
+DLG_API void apply_source(const Source& src1, Source& src2,
+		Source::Force force = Source::Force::none);
+
+// Parses a string like project::module::scope into a Source object.
+// Separator represents the separator between the source scopes.
+// E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
+DLG_API Source source(std::string_view str, Source::Force force = Source::Force::override,
+		std::string_view sep = DLG_DEFAULT_SEP);
+
+// Builds a source string from a given source up to the given lvl.
+// E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
+// would be 3, the source string would hold some_scope as well.
+DLG_API std::string source_string(const Source& src,
+	unsigned int lvl = 3u, std::string_view sep = DLG_DEFAULT_SEP);
+
+Source::Source(std::string_view name, Force force, std::string_view sep)
+{
+	*this = source(name, force, sep);
+}
 
 // Base logger class.
 // Must implement the write function that outputs the given string.
@@ -121,19 +169,20 @@ Selector& selector();
 // serve as fallback.
 Source& current_source();
 
-/// Default stream logger returned by the default selector.
+// Constructs a source object that clears any applied source.
+Source clear_source()
+{
+	Source s;
+	s.force = Source::Force::full;
+	return s;
+}
+
+// Default stream logger returned by the default selector.
 extern StreamLogger defaultLogger;
 
 // RAII guard that sets the thread_local source of dlg for its liftime.
 struct SourceGuard {
-	template<unsigned int I1 = 0, unsigned int I2 = 2 - I1, unsigned int I3 = (I2 + I1) / 2>
-	SourceGuard(Src<I1> src1 = {}, Src<I2> src2 = {}, Src<I3> src3 = {})
-		: SourceGuard(Source{src1, src2, src3}) {}
-
-	SourceGuard(std::string_view name, bool full = false)
-		: SourceGuard(Source{name}, full) {}
-
-	DLG_API SourceGuard(Source source, bool full = false);
+	DLG_API SourceGuard(const Source& source);
 	DLG_API ~SourceGuard();
 
 	SourceGuard(const SourceGuard&) = delete;
@@ -277,7 +326,7 @@ void output(Origin& origin, Src<2> src2, Args&&... args)
 template<typename... Args>
 void output(Origin& origin, Source src, Args&&... args)
 {
-	apply_source(src, origin.source, true);
+	apply_source(src, origin.source);
 	output(origin, std::forward<Args>(args)...);
 }
 
@@ -288,7 +337,6 @@ void output(Origin& origin, Args&&... args)
 	if(!logger)
 		return;
 
-	apply_source(current_source(), origin.source, false);
 	auto content = fmt::format(std::forward<Args>(args)...);
 	logger->output(origin, content);
 }
@@ -298,6 +346,7 @@ template<typename... Args>
 void do_log(std::string_view file, unsigned int line, Level level, Args&&... args)
 {
 	Origin origin = {file, line, level, {}};
+	apply_source(current_source(), origin.source);
 	output(origin, std::forward<Args>(args)...);
 }
 
@@ -307,6 +356,7 @@ void do_assert(std::string_view file, unsigned int line, Level level,
 {
 	Origin origin = {file, line, level, {}};
 	origin.expr = expr;
+	apply_source(current_source(), origin.source);
 	output(origin, std::forward<Args>(args)...);
 }
 
