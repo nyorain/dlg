@@ -202,6 +202,11 @@ struct SourceGuard {
 	CurrentSource old {};
 };
 
+// Utility functions for constructing Src objects
+inline Src<0> project(std::string_view str) { return {str}; }
+inline Src<1> module(std::string_view str) { return {str}; }
+inline Src<2> scope(std::string_view str) { return {str}; }
+
 // Literals to easily create source or source level objects.
 // Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string");
 // Alternatively, a string can be parsed: dlg_log("my_proj::my_mod::my_scope"_src, "A string");

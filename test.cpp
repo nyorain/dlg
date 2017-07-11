@@ -81,7 +81,7 @@ int main()
 	}
 
 	{
-		dlg_source("test"_module, "main"_scope);
+		dlg_source(dlg::module("test"), "main"_scope);
 		expected.src[0] = "";
 		expected.src[1] = "test";
 		expected.src[2] = "main";
