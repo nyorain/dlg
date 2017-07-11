@@ -60,4 +60,6 @@ int main()
 		expected.src[2] = "mscope";
 		dlg_debug(dlg::clear_source(), "mscope"_scope, "just some test");
 	}
+
+	dlg::SourceGuard guard2({"test"_module, "my"_scope});
 }

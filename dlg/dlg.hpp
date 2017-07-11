@@ -84,7 +84,7 @@ struct Source {
 		force = f;
 	}
 
-	Source(std::string_view name, Force force = Force::override,
+	inline Source(std::string_view name, Force force = Force::override,
 			std::string_view sep = DLG_DEFAULT_SEP);
 
 	// Represents the source levels.
@@ -127,10 +127,8 @@ DLG_API Source source(std::string_view str, Source::Force force = Source::Force:
 DLG_API std::string source_string(const Source& src,
 	unsigned int lvl = 3u, std::string_view sep = DLG_DEFAULT_SEP);
 
-Source::Source(std::string_view name, Force force, std::string_view sep)
-{
-	*this = source(name, force, sep);
-}
+inline Source::Source(std::string_view name, Force force, std::string_view sep)
+	{ *this = source(name, force, sep); }
 
 // Base logger class.
 // Must implement the write function that outputs the given string.
