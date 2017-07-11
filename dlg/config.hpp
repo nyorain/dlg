@@ -27,6 +27,8 @@
 // - DLG_HEADER_ONLY, if set to 1 includes the source files inline, defaulted to 1
 //   - even when using dlg in header only mode, one file must #define DLG_IMPLEMENTATION
 //     before including for the global symbols
+// - DLG_DISABLE, if defined, will disable all dlg functionality. Note that this defining
+//   this macro will lead to issues if your code uses anything else than dlg macros
 
 #ifndef DLG_CONFIG_HPP
 #define DLG_CONFIG_HPP

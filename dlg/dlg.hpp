@@ -7,6 +7,8 @@
 
 #pragma once
 
+#ifndef DLG_DISABLE // see config.hpp
+
 #include <string>
 #include <functional>
 #include <ostream>
@@ -383,4 +385,26 @@ void do_assert(std::string_view file, unsigned int line, std::string_view func,
 	#include "dlg.cpp"
 #endif
 
+#else // DLG_DISABLE
+
+	#define dlg_trace(...) {}
+	#define dlg_debug(...) {}
+	#define dlg_info(...) {}
+	#define dlg_warn(...) {}
+	#define dlg_error(...) {}
+	#define dlg_critical(...) {}
+	#define dlg_assert_debug(expr, ...) {}
+	#define dlg_assert_warn(expr, ...) {}
+	#define dlg_assert_error(expr, ...) {}
+	#define dlg_assert_critical(expr, ...) {}
+	#define dlg_check_unnamed(code) {}
+	#define dlg_check(scope, code) {}
+	#define dlg_source(...) {}
+	#define dlg_source_global(...) {}
+	#define dlg_log(...) {}
+	#define dlg_assert(expr, ...) {}
+
+	namespace literals {};
+
+#endif // DLG_DISABLE
 #endif // header guard
