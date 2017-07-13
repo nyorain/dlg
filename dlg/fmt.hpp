@@ -25,7 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Massively changed by nyorain for dlg
+// Massively changed by nyorain for dlg.
+// Used fmt commit 589ccc1675a82c2d0358de752aa2b73225ba5f5f
 // - No support for non C++17 compilers anymore, some features were removed.
 // - Removed most macros/compile time switching/compiler feature juggling
 // - Made it header-only by default
@@ -78,9 +79,6 @@
 // Disable the warning about implicit conversions that may change the sign of
 // an integer; silencing it otherwise would require many explicit casts.
 #  pragma GCC diagnostic ignored "-Wsign-conversion"
-# endif
-# if __cplusplus >= 201103L || defined __GXX_EXPERIMENTAL_CXX0X__
-#  define FMT_HAS_GXX_CXX11 1
 # endif
 #else
 # define FMT_GCC_EXTENSION

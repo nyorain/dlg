@@ -1,10 +1,11 @@
-#define DLG_IMPLEMENTATION
 #include "dlg/dlg.hpp"
+#include "dlg/output.hpp"
+#include <iostream>
 using namespace dlg::literals;
 
 dlg::Source expected;
 
-dlg::Logger* mySelector(dlg::Origin origin)
+void myOutputHandler(dlg::Origin origin, std::string_view message)
 {
 	if(origin.source.src[0] != expected.src[0])
 		std::cout << "0: '" << origin.source.src[0] << "' != '" << expected.src[0] << "'\n";
@@ -15,7 +16,7 @@ dlg::Logger* mySelector(dlg::Origin origin)
 	if(origin.source.src[2] != expected.src[2])
 		std::cout << "2: '" << origin.source.src[2] << "' != '" << expected.src[2] << "'\n";
 
-	return nullptr;
+	// dlg::defaultOutputHandler(origin, message);
 }
 
 void func1()
@@ -34,7 +35,7 @@ void func2()
 
 int main()
 {
-	dlg::selector(&mySelector);
+	dlg::outputHandler(&myOutputHandler);
 
 	expected = {};
 	dlg_debug("just some test");

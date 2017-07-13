@@ -114,55 +114,23 @@ struct Origin {
 // Only if override is false, will not override already set fields in src1.
 // The Force parameter can be used to override the force used to apply the source,
 // if it is Force::none the force value from src1 will be used.
-DLG_API void apply_source(const Source& src1, Source& src2,
+void apply_source(const Source& src1, Source& src2,
 		Source::Force force = Source::Force::none);
 
 // Parses a string like project::module::scope into a Source object.
 // Separator represents the separator between the source scopes.
 // E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
-DLG_API Source source(std::string_view str, Source::Force force = Source::Force::override,
+Source source(std::string_view str, Source::Force force = Source::Force::override,
 		std::string_view sep = DLG_DEFAULT_SEP);
 
 // Builds a source string from a given source up to the given lvl.
 // E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
 // would be 3, the source string would hold some_scope as well.
-DLG_API std::string source_string(const Source& src,
+std::string source_string(const Source& src,
 	unsigned int lvl = 3u, std::string_view sep = DLG_DEFAULT_SEP);
 
 inline Source::Source(std::string_view name, Force force, std::string_view sep)
 	{ *this = source(name, force, sep); }
-
-// Base logger class.
-// Must implement the write function that outputs the given string.
-// Might override the output function to alter the information presentation.
-class Logger {
-public:
-	virtual ~Logger() = default;
-	virtual void write(const std::string& string) = 0;
-	virtual void output(const Origin& origin, std::string msg);
-};
-
-// Logger implementation that simply writes a string to a given std::ostream.
-class StreamLogger : public Logger {
-public:
-	inline StreamLogger(std::ostream& os) : ostream(&os) {}
-	DLG_API void write(const std::string& string) override;
-	std::ostream* ostream;
-};
-
-// The selector function.
-// This function is called when dlg is used for logging/assertion and must return
-// the Logger dlg should use for the given origin. If nothing should be outputted,
-// can return a nullptr (in which case the log/assertion error is discarded).
-// Can e.g. use the origin to channel different origins to different outputs.
-using Selector = std::function<Logger*(const Origin&)>;
-
-// Sets a new Selector. Must be valid i.e. not an empty std::function object.
-// Returns the old selector.
-Selector selector(Selector set);
-
-// Receives the current selector.
-Selector& selector();
 
 // Used to store a currently set source.
 // Might also hold __FUNC__ in which the source was set to only
@@ -184,17 +152,14 @@ inline Source clear_source()
 	return s;
 }
 
-// Default stream logger returned by the default selector.
-extern StreamLogger defaultLogger;
-
 // RAII guard that sets the thread_local source of dlg for its liftime.
 struct SourceGuard {
 	// Constructs a new source guard for the given source.
 	// Will apply the given source as current source for the liftime of this gurad.
 	// Will apply it to current source with the given force. If only_this_function
 	// is a valid value, the source guard will only be active in the current function.
-	DLG_API SourceGuard(const Source& source, const char* func = nullptr);
-	DLG_API ~SourceGuard();
+	SourceGuard(const Source& source, const char* func = nullptr);
+	~SourceGuard();
 
 	SourceGuard(const SourceGuard&) = delete;
 	SourceGuard& operator=(const SourceGuard&) = delete;
@@ -227,7 +192,7 @@ namespace literals {
 // file is usually taken from __FILE__ and base DLG_BASE_PATH.
 // If it detects that file is relative, will only strip away the relative beginning, otherwise
 // will strip the given base path.
-DLG_API std::string_view strip_path(std::string_view file, std::string_view base);
+std::string_view strip_path(std::string_view file, std::string_view base);
 
 // -- Logging macros --
 #if DLG_LOG_LEVEL <= DLG_LEVEL_TRACE
@@ -322,6 +287,9 @@ DLG_API std::string_view strip_path(std::string_view file, std::string_view base
 
 // -- Implementation --
 // -- Output, Source detection --
+// Bridge to output.hpp, will call the current outputHandler with the given arguments
+void do_output(Origin& origin, std::string_view msg);
+
 template<typename... Args>
 void output(Origin& origin, Src<0> src0, Args&&... args)
 {
@@ -353,12 +321,8 @@ void output(Origin& origin, Source src, Args&&... args)
 template<typename... Args>
 void output(Origin& origin, Args&&... args)
 {
-	auto logger = selector()(origin);
-	if(!logger)
-		return;
-
-	auto content = fmt::format(std::forward<Args>(args)...);
-	logger->output(origin, content);
+	auto msg = fmt::format(std::forward<Args>(args)...);
+	do_output(origin, msg);
 }
 
 // -- Macro functions --
@@ -385,10 +349,6 @@ void do_assert(std::string_view file, unsigned int line, std::string_view func,
 }
 
 } // namespace dlg
-
-#if DLG_HEADER_ONLY
-	#include "dlg.cpp"
-#endif
 
 #else // DLG_DISABLE
 

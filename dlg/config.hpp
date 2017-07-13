@@ -24,11 +24,8 @@
 //   - is not used if DLG_FILE has a custom value set
 //   - relative beginnings of __FILE__ will always be stripped away
 //   - makes sense to define this on a per-project level, should end with a '/' character
-// - DLG_HEADER_ONLY, if set to 1 includes the source files inline, defaulted to 1
-//   - even when using dlg in header only mode, one file must #define DLG_IMPLEMENTATION
-//     before including for the global symbols
 // - DLG_DISABLE, if defined, will disable all dlg functionality. Note that this defining
-//   this macro will lead to issues if your code uses anything else than dlg macros
+//     this macro will lead to issues if your code uses anything else than dlg macros
 
 #ifndef DLG_CONFIG_HPP
 #define DLG_CONFIG_HPP
@@ -87,17 +84,6 @@
 		#define DLG_BASE_PATH ""
 	#endif
 	#define DLG_FILE ::dlg::strip_path(__FILE__, DLG_BASE_PATH)
-#endif
-
-// DLG_HEADER_ONLY
-#ifndef DLG_HEADER_ONLY
-	#define DLG_HEADER_ONLY 1
-#endif
-
-#if DLG_HEADER_ONLY
-	#define DLG_API inline
-#else
-	#define DLG_API
 #endif
 
 #endif // header guard
