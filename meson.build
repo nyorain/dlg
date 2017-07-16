@@ -11,6 +11,12 @@ defs = []
 sources = []
 libs = []
 
+add_project_arguments(
+	'-Wall',
+	'-Wextra',
+	'-Wpedantic',
+	language: 'cpp')
+
 headers = files([
 	'dlg/output.hpp',
 	'dlg/config.hpp',
@@ -39,7 +45,7 @@ dlg_dep = declare_dependency(
 
 # sample
 if build_sample
-	executable('sample', 'sample.cpp', dependencies: dlg_dep)
+	sample = executable('sample', 'sample.cpp', dependencies: dlg_dep)
 endif
 
 # install
