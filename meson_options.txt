@@ -1,2 +1,2 @@
-option('library', type: 'boolean', value : false)
+option('library', type: 'boolean', value : true)
 option('sample', type: 'boolean', value: false)

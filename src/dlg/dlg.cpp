@@ -10,8 +10,8 @@
 #include <codecvt>
 #include <locale>
 
-#include "dlg.hpp"
-#include "output.hpp"
+#include <dlg/dlg.hpp>
+#include <dlg/output.hpp>
 
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
