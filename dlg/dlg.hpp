@@ -264,7 +264,7 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 #if DLG_CHECK
 	#define dlg_check_unnamed(code) { code }
 	#define dlg_check(scope, code) {  \
-		::dlg::SourceGuard dlg_check_scope_guard(scope); \
+		::dlg::SourceGuard dlg_check_scope_guard(scope, __FUNCTION__); \
 		code \
 	}
 #else

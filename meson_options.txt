@@ -1,2 +1,2 @@
-option('build_library', type: 'boolean', value : false)
-option('build_sample', type: 'boolean', value: false)
+option('library', type: 'boolean', value : false)
+option('sample', type: 'boolean', value: false)

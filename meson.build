@@ -2,8 +2,8 @@ project('dlg', 'cpp',
 	version: '0.1.0',
 	default_options: 'cpp_std=c++1z')
 
-build_library = get_option('build_library')
-build_sample = get_option('build_sample')
+build_library = get_option('library')
+build_sample = get_option('sample')
 
 # dep variables depending on build type
 inc = include_directories('.')
