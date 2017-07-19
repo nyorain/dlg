@@ -35,7 +35,7 @@ void func2()
 
 int main()
 {
-	dlg::outputHandler(&myOutputHandler);
+	dlg::output_handler(&myOutputHandler);
 
 	expected = {};
 	dlg_debug("just some test");

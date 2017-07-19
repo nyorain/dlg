@@ -8,6 +8,8 @@
 #pragma once
 
 #include <string>
+#include <ostream>
+
 #include "config.hpp"
 #include "dlg.hpp"
 
@@ -91,9 +93,15 @@ struct TextStyle {
 // with stdio, this might be shown before output written using the ostream api.
 void write(std::ostream& ostream, std::string_view message);
 
+// Returns the default TextStyle for the given logging level/type.
+TextStyle default_text_style(Level level);
+
 // The default output function.
 // Will simply print the given string with the given style to std::cout.
-void defaultOutput(TextStyle style, std::string_view message);
+void default_output(std::ostream& os, TextStyle style, std::string_view message);
+
+// Like the default output but without any color.
+void default_output(std::ostream& os, std::string_view message);
 
 // The output function.
 // Can be set using the dlg::output function.
@@ -106,22 +114,28 @@ using OutputHandler = std::function<void(const Origin&, std::string_view msg)>;
 // [source | file:line] message
 // If the origin is a assertion, will preprend the assertion expression
 // to the message.
-std::string defaultMessage(const Origin& origin, std::string_view msg);
+std::string default_message(const Origin& origin, std::string_view msg);
 
 // The default output handler.
 // Uses 'defaultMessage' and 'defaultOutput' (from dlg/output.hpp) in every case.
-void defaultOutputHandler(const Origin& origin, std::string_view msg);
+void default_output_handler(const Origin& origin, std::string_view msg);
+
+// Default output handler, modified to print to a custom output stream and optionally
+// support color.
+// Uses 'defaultMessage' and 'defaultOutput' (from dlg/output.hpp) in every case.
+void generic_output_handler(std::ostream& os, const Origin& origin, std::string_view msg,
+	bool use_color = true);
 
 // Sets a new Selector. Must be valid i.e. not an empty std::function object.
 // The default Outputter is dlg::defaultOutput.
 // Returns the old selector.
-OutputHandler outputHandler(OutputHandler set);
+OutputHandler output_handler(OutputHandler set);
 
 // Receives the current selector.
-OutputHandler& outputHandler();
+OutputHandler& output_handler();
 
 // Returns a unix escape sequence for the given text style.
-std::string escapeSequence(TextStyle style);
+std::string escape_sequence(TextStyle style);
 
 } // namespace dlg
 

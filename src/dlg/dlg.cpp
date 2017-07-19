@@ -15,30 +15,32 @@
 
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
+	#include <unistd.h>
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
 	#define DEFINE_CONSOLEV2_PROPERTIES
 	#include <windows.h>
+	#include <io.h>
 
-	// i hate you, microsoft
+	// thank you for nothing, microsoft
 	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
 #else
-	#error Cannot determine platform
+	#error Cannot determine platform (needed for color and utf-8 and stuff)
 #endif
 
 namespace dlg {
 
 #ifdef DLG_OS_WIN
-std::u16string toUtf16(const std::string_view& utf8)
+std::u16string to_utf16(const std::string_view& utf8)
 {
 	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
 	return converter.from_bytes(&utf8.front(), &utf8.back() + 1);
 }
 
-bool checkAnsiSupport()
+bool check_ansi_support()
 {
 	HANDLE out = ::GetStdHandle(STD_OUTPUT_HANDLE);
 	HANDLE err = ::GetStdHandle(STD_OUTPUT_HANDLE);
@@ -57,13 +59,13 @@ bool checkAnsiSupport()
 	return true;
 }
 
-bool ansiSupported()
+bool ansi_supported()
 {
-	static bool ret = checkAnsiSupport();
+	static bool ret = check_ansi_support();
 	return ret;
 }
 
-WORD reverseRGB(WORD rgb)
+WORD reverse_rgb(WORD rgb)
 {
 	static const WORD rev[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };
 	return rev[rgb];
@@ -91,7 +93,7 @@ void set(WORD& current, Style style)
 		current = (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 }
 
-HANDLE consoleHandle(std::ostream& ostream)
+HANDLE console_handle(std::ostream& ostream)
 {
 	static const auto* default_out_buf = std::cout.rdbuf();
 	static const auto* default_err_buf = std::cerr.rdbuf();
@@ -106,6 +108,18 @@ HANDLE consoleHandle(std::ostream& ostream)
 	return nullptr;
 }
 
+bool cout_is_tty()
+{
+	return _isatty(_fileno(stdout));
+}
+
+#else
+
+bool cout_is_tty()
+{
+	return isatty(fileno(stdout));
+}
+
 #endif // DLG_OS_WIN
 
 void write(std::ostream& ostream, std::string_view message)
@@ -113,9 +127,9 @@ void write(std::ostream& ostream, std::string_view message)
 #ifdef DLG_OS_WIN
 	// This is needed to enable correct utf-8 output on the windows
 	// command line. Because doing it the right way would be too simple, eh?
-	auto handle = consoleHandle(ostream);
+	auto handle = console_handle(ostream);
 	if(handle) {
-		auto str = toUtf16(message);
+		auto str = to_utf16(message);
 		if(::WriteConsoleW(handle, str.c_str(), str.size(), nullptr, nullptr))
 			return;
 	}
@@ -124,15 +138,13 @@ void write(std::ostream& ostream, std::string_view message)
 	ostream << message;
 }
 
-void defaultOutput(TextStyle style, std::string_view message)
+void default_output(std::ostream& os, TextStyle style, std::string_view message)
 {
-	std::ostream& os = std::cout;
-
 #ifdef DLG_OS_WIN
-	auto handle = consoleHandle(os);
-	if(ansiSupported()) {
-		auto string = escapeSequence(style);
-		string.append(message).append(escapeSequence({Foreground::none, Style::reset}));
+	auto handle = console_handle(os);
+	if(ansi_supported()) {
+		auto string = escape_sequence(style);
+		string.append(message).append(escape_sequence({Foreground::none, Style::reset}));
 		write(os, string);
 	} else {
 		CONSOLE_SCREEN_BUFFER_INFO info;
@@ -148,13 +160,18 @@ void defaultOutput(TextStyle style, std::string_view message)
 		::SetConsoleTextAttribute(handle, info.wAttributes);
 	}
 #else
-	os << escapeSequence(style);
+	os << escape_sequence(style);
 	os << message;
-	os << escapeSequence({Foreground::none, Style::reset});
+	os << escape_sequence({Foreground::none, Style::reset});
 #endif
 }
 
-std::string defaultMessage(const Origin& origin, std::string_view msg)
+void default_output(std::ostream& os, std::string_view message)
+{
+	write(os, message);
+}
+
+std::string default_message(const Origin& origin, std::string_view msg)
 {
 	std::string ret;
 	ret += "[";
@@ -173,10 +190,10 @@ std::string defaultMessage(const Origin& origin, std::string_view msg)
 	return ret;
 }
 
-void defaultOutputHandler(const Origin& origin, std::string_view msg)
+TextStyle default_text_style(Level level)
 {
 	// text styles used by the default logger for the different log levels.
-	static constexpr TextStyle textStyles[] = {
+	static constexpr TextStyle text_styles[] = {
 		{Foreground::green, Style::italic},
 		{Foreground::gray, Style::dim},
 		{Foreground::cyan},
@@ -185,9 +202,24 @@ void defaultOutputHandler(const Origin& origin, std::string_view msg)
 		{Foreground::red, Style::bold}
 	};
 
-	auto str = defaultMessage(origin, msg);
-	auto textStyle = textStyles[static_cast<unsigned int>(origin.level)];
-	defaultOutput(textStyle, str);
+	return text_styles[static_cast<unsigned int>(level)];
+}
+
+void default_output_handler(const Origin& origin, std::string_view msg)
+{
+	return generic_output_handler(std::cout, origin, msg, cout_is_tty());
+}
+
+void generic_output_handler(std::ostream& os, const Origin& origin, std::string_view msg, bool col)
+{
+	auto str = default_message(origin, msg);
+
+	if(col) {
+		auto text_styles = default_text_style(origin.level);
+		default_output(os, text_styles, str);
+	} else {
+		default_output(os, str);
+	}
 }
 
 Source source(std::string_view str, Source::Force force, std::string_view sep) {
@@ -256,7 +288,7 @@ std::string_view strip_path(std::string_view file, std::string_view base)
 	return file.substr(start > file.size() ? 0 : start);
 }
 
-std::string escapeSequence(TextStyle style)
+std::string escape_sequence(TextStyle style)
 {
 	std::string ret;
 
@@ -286,17 +318,17 @@ std::string escapeSequence(TextStyle style)
 	return ret;
 }
 
-OutputHandler outputHandler(OutputHandler set)
+OutputHandler output_handler(OutputHandler set)
 {
-	auto& handler = outputHandler();
+	auto& handler = output_handler();
 	auto cpy = std::move(handler);
 	handler = set;
 	return cpy;
 }
 
-OutputHandler& outputHandler()
+OutputHandler& output_handler()
 {
-	static OutputHandler handler = &defaultOutputHandler;
+	static OutputHandler handler = &default_output_handler;
 	return handler;
 }
 
@@ -308,7 +340,7 @@ CurrentSource& current_source()
 
 void do_output(Origin& origin, std::string_view msg)
 {
-	return outputHandler()(origin, msg);
+	return output_handler()(origin, msg);
 }
 
 SourceGuard::SourceGuard(const Source& source, const char* func) : old(current_source())
