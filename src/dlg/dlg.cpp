@@ -75,16 +75,16 @@ void set(WORD& current, Background bg)
 {
 	current &= 0xFF0F;
 	auto wbg = static_cast<WORD>(bg);
-	if(wbg >= 100) current |= (0x8 | reverseRGB(wbg - 100)) << 4;
-	else current |= reverseRGB(wbg - 40) << 4;
+	if(wbg >= 100) current |= (0x8 | reverse_rgb(wbg - 100)) << 4;
+	else current |= reverse_rgb(wbg - 40) << 4;
 }
 
 void set(WORD& current, Foreground fg)
 {
 	current &= 0xFFF0;
 	auto wfg = static_cast<WORD>(fg);
-	if(wfg >= 90) current |= (0x8 | reverseRGB(wfg - 90));
-	else current |= reverseRGB(wfg - 30);
+	if(wfg >= 90) current |= (0x8 | reverse_rgb(wfg - 90));
+	else current |= reverse_rgb(wfg - 30);
 }
 
 void set(WORD& current, Style style)

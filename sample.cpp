@@ -13,7 +13,7 @@ using namespace dlg::literals;
 struct MyInfo {};
 std::ostream& operator<<(std::ostream& os, const MyInfo&)
 {
-	os << "oh boi!";
+	os << "oh boi! .";
 	return os;
 }
 
@@ -47,6 +47,9 @@ int main()
 		dlg_info("just some {}", "source guard test");
 	}
 
+	dlg_info("this is just a realllllly long string, you can ignore me. This is for testing "
+		"purposes. I mean, i have to know what this shit look likes, eh? Just a few more words "
+		"then i am done here. I actually forgot the spaces in the last lines in the end. ");
 	dlg_log("Loggin is easy!");
 	dlg_assert(5 == 6, "render"_module, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
 	dlg_assert_debug(5 == 6, "ny::x11::data"_src, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
