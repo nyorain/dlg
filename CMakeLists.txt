@@ -32,6 +32,8 @@ install(TARGETS dlg
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
 		
+install(DIRECTORY include/dlg DESTINATION include/dlg)
+		
 # sample
 if(Sample)
 	add_executable(sample "sample.cpp")
