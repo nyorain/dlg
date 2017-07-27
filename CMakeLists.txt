@@ -5,6 +5,7 @@
 cmake_minimum_required (VERSION 2.8.0)
 project(dlg)
 
+option(Static "build the library static" on)
 option(Sample "Build the sample" off)
 
 # enable warnings
@@ -24,7 +25,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
 include_directories("include")
 
 # library
-add_library(dlg SHARED "src/dlg/dlg.cpp")
+if(Static)
+	add_library(dlg STATIC "src/dlg/dlg.cpp")
+else()
+	add_library(dlg SHARED "src/dlg/dlg.cpp")
+endif()
 
 #install
 install(TARGETS dlg
