@@ -32,7 +32,7 @@ install(TARGETS dlg
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
 		
-install(DIRECTORY include/dlg DESTINATION include/dlg)
+install(DIRECTORY include/dlg DESTINATION include)
 		
 # sample
 if(Sample)
