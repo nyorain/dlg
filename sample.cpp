@@ -3,8 +3,6 @@
 #include <sstream>
 #include <functional>
 #include <cstring>
-
-#define DLG_IMPLEMENTATION
 #include "dlg/dlg.hpp"
 
 using namespace dlg::literals;
@@ -12,26 +10,18 @@ using namespace dlg::literals;
 #define custom_trace(...) dlg_trace("sample"_project, "custom_trace"_scope, __VA_ARGS__)
 #define custom_assert(expr, ...) dlg_assert(expr, "sample"_project, "custom_assert"_scope, __VA_ARGS__)
 
-dlg::Logger* mySelector(dlg::Origin origin)
-{
-	// if(origin.level == dlg::Level::trace || (origin.source.src[1] == "render"))
-	// 	return nullptr;
-
-	return &dlg::defaultLogger;
-}
-
 struct MyInfo {};
-std::ostream& operator<<(std::ostream& os, const MyInfo& info)
+std::ostream& operator<<(std::ostream& os, const MyInfo&)
 {
-	os << "oh boi!";
+	os << "oh boi! .";
 	return os;
 }
 
 int main()
 {
-	std::cout.sync_with_stdio(false);
+	// this will lead to non-synced output on windows
+	// std::cout.sync_with_stdio(false);
 
-	dlg::selector(&mySelector);
 	std::vector<int> v = {1, 4, 6, 3, 2, 4, 1};
 
 	dlg_trace("network"_module, "trace {}", 1);
@@ -57,6 +47,9 @@ int main()
 		dlg_info("just some {}", "source guard test");
 	}
 
+	dlg_info("this is just a realllllly long string, you can ignore me. This is for testing "
+		"purposes. I mean, i have to know what this shit look likes, eh? Just a few more words "
+		"then i am done here. I actually forgot the spaces in the last lines in the end. ");
 	dlg_log("Loggin is easy!");
 	dlg_assert(5 == 6, "render"_module, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
 	dlg_assert_debug(5 == 6, "ny::x11::data"_src, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");

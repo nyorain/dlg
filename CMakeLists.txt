@@ -4,4 +4,36 @@
 
 cmake_minimum_required (VERSION 2.8.0)
 project(dlg)
-install(DIRECTORY dlg DESTINATION include)
+
+option(Sample "Build the sample" off)
+
+# enable warnings
+set(is_clang CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(MSVC)
+  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+  endif()
+elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR is_clang)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wextra -Wpedantic")
+endif()
+
+# c++1z
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
+include_directories("include")
+
+# library
+add_library(dlg SHARED "src/dlg/dlg.cpp")
+
+#install
+install(TARGETS dlg
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib)
+		
+# sample
+if(Sample)
+	add_executable(sample "sample.cpp")
+	target_link_libraries(sample dlg)
+endif()
