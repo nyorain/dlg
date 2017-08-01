@@ -1,0 +1,2 @@
+option('library', type: 'boolean', value : true) # otherwise adds the cpp file as dependency
+option('sample', type: 'boolean', value: false)

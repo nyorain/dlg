@@ -18,7 +18,7 @@ having read the example though:
 
 Note though that dlg can be used without weird dummy messages as well.
 
-## To do
+## Ideas and todo
 
 - [x] windows utf-8 output (see ny)
 - [x] windows text style support
