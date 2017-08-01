@@ -2,7 +2,7 @@ dlg
 ===
 
 Just another (at-the-moment-not-so-much-yet-but-pretty-alright-i-guess-)lightweight logging library
-for c++ 17.
+for C++ 17.
 Uses a slightly stripped version of libfmt at the moment (that is pretty much all of its 'bloat').
 The name stands for some kind of super clever word mixture of the words 'debug' and 'log' (think
 of something youself, duh).
@@ -27,6 +27,7 @@ Note though that dlg can be used without weird dummy messages as well.
 - [x] custom (changeable) base paths (for nested projects/header calls) __[DLG_FILE]__
 - [x] possibility to get current scope (or more general: exception support)
 - [x] make default scope signs customizable by macro
+- [ ] unit tests (at least some basic stuff)
 
 Make probably no sense:
 
