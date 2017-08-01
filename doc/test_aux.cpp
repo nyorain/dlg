@@ -53,4 +53,10 @@ int main()
 	dlg_log("Loggin is easy!");
 	dlg_assert(5 == 6, "render"_module, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
 	dlg_assert_debug(5 == 6, "ny::x11::data"_src, "uuh... {}", "whatdoiknowgoawayyoulittleshit!");
+
+	// empty logging is not standard c++ (works with gcc/clang though)
+	dlg_critical();
+
+	// empty assertions are standard c++
+	dlg_assert(1 == 2);
 }

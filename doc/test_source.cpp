@@ -1,5 +1,4 @@
-#define DLG_IMPLEMENTATION
-#include "dlg/dlg.hpp"
+#include <dlg/dlg.hpp>
 using namespace dlg::literals;
 
 dlg::Source expected;

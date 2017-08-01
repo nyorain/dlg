@@ -36,11 +36,11 @@ install(TARGETS dlg
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
-		
+
 install(DIRECTORY include/dlg DESTINATION include)
-		
+
 # sample
 if(Sample)
-	add_executable(sample "sample.cpp")
+	add_executable(sample "doc/example.cpp")
 	target_link_libraries(sample dlg)
 endif()

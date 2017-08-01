@@ -26,6 +26,11 @@
 //   - makes sense to define this on a per-project level, should end with a '/' character
 // - DLG_DISABLE, if defined, will disable all dlg functionality. Note that this defining
 //     this macro will lead to issues if your code uses anything else than dlg macros
+// - DLG_DISABLE_EMPTY_LOG define this macro to make empty logging calls like
+//     e.g. dlg_critical() result in a compile-time error. Not defined by default.
+// - DLG_EMPTY_LOG the string to use when any dlg logging macro is called without
+//     any arguments. Defaulted to "<dlg: no arguments supplied>"
+//     Has no effect if DLG_DISABLE_EMPTY_LOG is defined
 
 #ifndef DLG_CONFIG_HPP
 #define DLG_CONFIG_HPP
@@ -85,5 +90,10 @@
 	#endif
 	#define DLG_FILE ::dlg::strip_path(__FILE__, DLG_BASE_PATH)
 #endif
+
+// DLG_EMPTY_LOG
+#ifndef DLG_EMPTY_LOG
+	#define DLG_EMPTY_LOG "<dlg: no arguments supplied>"
+#endif // DLG_EMPTY_LOG
 
 #endif // header guard
