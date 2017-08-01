@@ -91,12 +91,9 @@
 	#define DLG_FILE ::dlg::strip_path(__FILE__, DLG_BASE_PATH)
 #endif
 
-<<<<<<< HEAD:include/dlg/config.hpp
 // DLG_EMPTY_LOG
 #ifndef DLG_EMPTY_LOG
 	#define DLG_EMPTY_LOG "<dlg: no arguments supplied>"
 #endif // DLG_EMPTY_LOG
 
-=======
->>>>>>> meson:include/dlg/config.hpp
 #endif // header guard

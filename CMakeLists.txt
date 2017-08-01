@@ -5,8 +5,8 @@
 cmake_minimum_required (VERSION 2.8.0)
 project(dlg)
 
-option(Static "build the library static" on)
-option(Sample "Build the sample" off)
+option(static "build the library static" on)
+option(sample "Build the sample" off)
 
 # enable warnings
 set(is_clang CMAKE_CXX_COMPILER_ID MATCHES "Clang")
