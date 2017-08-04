@@ -341,7 +341,7 @@ void output(Origin& origin, Args&&... args)
 
 inline void output(Origin& origin)
 {
-	do_output(origin, DLG_EMPTY_LOG);
+	do_output(origin, origin.expr.empty() ? "" : DLG_EMPTY_LOG);
 }
 
 #endif // DLG_DISABLE_EMPTY_LOG
