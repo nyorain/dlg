@@ -2,10 +2,10 @@ dlg
 ===
 
 Just another (at-the-moment-not-so-much-yet-but-pretty-alright-i-guess-)lightweight logging library
-for C++ 17 (which implies that it will probably not build on msvc at the moment).
+for C++ 17 (which implies that it will probably not build on msvc).
 Uses a slightly stripped version of libfmt at the moment (that is pretty much all of its 'bloat').
 The name stands for some kind of super clever word mixture of the words 'debug' and 'log' (think
-of something youself, duh).
+of something yourself, duh).
 
 Can be built with cmake or meson (please consider jumping onto the meson train though,
 at some point i may no longer want to maintain the cmake version).
