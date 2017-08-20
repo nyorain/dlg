@@ -7,12 +7,11 @@
 
 #pragma once
 
-#ifndef DLG_DISABLE // see config.hpp
-
 #include <string>
 #include <functional>
 #include <ostream>
 #include <string>
+#include <vector>
 #include <array>
 
 #include "fmt.hpp"
@@ -42,63 +41,11 @@ inline bool operator>(Level a, Level b)
 inline bool operator>=(Level a, Level b)
 	{ return static_cast<unsigned int>(a) >= static_cast<unsigned int>(b); }
 
-// Object representing the ith level of an origin source.
-// Used as dummy objects detected by templates for the different source levels.
-template<unsigned int I, typename = std::enable_if_t<I < 3>>
-struct Src { std::string_view name; };
-
-// Represents a source name for a call to log/assert.
-// The string_view array represents the differents source levels, e.g. {"proj", "class", "func"}.
-struct Source {
-	// Specifies in which way a source should be applied.
-	enum class Force {
-		// Unspecified, meta value
-		none = 0,
-
-		// Only non-empty src levels are applied to empty dst levels.
-		no_override,
-
-		// All non-empty src levels are applied, they may override
-		override,
-
-		// All src levels are applied, i.e. the source if fully assigned.
-		full
-	};
-
-	template<unsigned int I1 = 0>
-	Source(Src<I1> src1 = {}, Force f = Force::override) {
-		src[I1] = src1.name;
-		force = f;
-	}
-
-	template<unsigned int I1, unsigned int I2>
-	Source(Src<I1> src1, Src<I2> src2, Force f = Force::override) {
-		src[I1] = src1.name;
-		src[I2] = src2.name;
-		force = f;
-	}
-
-	template<unsigned int I1, unsigned int I2, unsigned int I3>
-	Source(Src<I1> src1, Src<I2> src2, Src<I3> src3, Force f = Force::override) {
-		src[I1] = src1.name;
-		src[I2] = src2.name;
-		src[I3] = src3.name;
-		force = f;
-	}
-
-	inline Source(std::string_view name, Force force = Force::override,
-			std::string_view sep = DLG_DEFAULT_SEP);
-
-	// Represents the source levels.
-	// Usually src[0] is project level, src[1] module level and src[2] scope level.
-	// E.g. something like {"dlg", "Source", "Source"} for the sources constructor,
-	// but they can also be used in a more abstract matter (i.e. grouping different
-	// parts of a project independent from class/file/function).
-	std::array<std::string_view, 3> src {};
-
-	// In which way this source is applied.
-	// The attribute is only used in certain source object usages.
-	Force force {Force::override};
+/// Tag type for string_view typesafety.
+/// When using this type in a dlg log/assert macro it will be detected
+/// and automatically added to tags.
+struct Tag {
+	std::string_view tag;
 };
 
 // Whole origin of a log/assertion call.
@@ -106,127 +53,99 @@ struct Origin {
 	std::string_view file;
 	unsigned int line;
 	Level level;
-	Source source;
+	std::vector<std::string_view> tags;
 	std::string_view expr = nullptr; // assertion expression, nullptr for logging
 };
 
-// Copies the valies src fields from src1 to src2, leaves the other ones untouched.
-// Only if override is false, will not override already set fields in src1.
-// The Force parameter can be used to override the force used to apply the source,
-// if it is Force::none the force value from src1 will be used.
-void apply_source(const Source& src1, Source& src2,
-		Source::Force force = Source::Force::none);
-
-// Parses a string like project::module::scope into a Source object.
-// Separator represents the separator between the source scopes.
-// E.g. source("project.module.some_scope", ".") => {"project", "module", "some_scope"}
-Source source(std::string_view str, Source::Force force = Source::Force::override,
-		std::string_view sep = DLG_DEFAULT_SEP);
-
-// Builds a source string from a given source up to the given lvl.
-// E.g. source_string({"project", "module", "some_scope"}, ".", 2) => "project.module". If lvl
-// would be 3, the source string would hold some_scope as well.
-std::string source_string(const Source& src,
-	unsigned int lvl = 3u, std::string_view sep = DLG_DEFAULT_SEP);
-
-inline Source::Source(std::string_view name, Force force, std::string_view sep)
-	{ *this = source(name, force, sep); }
-
-// Used to store a currently set source.
-// Might also hold __FUNC__ in which the source was set to only
-// apply it to the given function.
-struct CurrentSource : Source {
-	const char* func;
+// Used to store a currently applied tag.
+// If the func member is not null it holds the __FUNC__ to which the tag
+// should be applied.
+struct CurrentTag : public Tag {
+	const char* func {};
 };
 
-// thread local static variable getter that can be set to the current source.
-// even if the source levels are set they can be overriden when logging, they just
-// serve as fallback.
-CurrentSource& current_source();
+// Retrieves the current tags in the calling thread.
+std::vector<CurrentTag*>& current_tags_ref();
 
-// Constructs a source object that clears any applied source.
-inline Source clear_source()
-{
-	Source s;
-	s.force = Source::Force::full;
-	return s;
-}
+// RAII guard that adds current tags for its lifetime
+class TagsGuard {
+public:
+	TagsGuard(std::string_view tags, const char* func) : TagsGuard({tags}, func) {}
+	TagsGuard(std::initializer_list<std::string_view> tags, const char* func = nullptr);
+	~TagsGuard();
 
-// RAII guard that sets the thread_local source of dlg for its liftime.
-struct SourceGuard {
-	// Constructs a new source guard for the given source.
-	// Will apply the given source as current source for the liftime of this gurad.
-	// Will apply it to current source with the given force. If only_this_function
-	// is a valid value, the source guard will only be active in the current function.
-	SourceGuard(const Source& source, const char* func = nullptr);
-	~SourceGuard();
+	TagsGuard(const TagsGuard&) = delete;
+	TagsGuard& operator=(const TagsGuard&) = delete;
 
-	SourceGuard(const SourceGuard&) = delete;
-	SourceGuard& operator=(const SourceGuard&) = delete;
-
-	CurrentSource old {};
+protected:
+	std::vector<CurrentTag> tags_;
 };
 
-// Utility functions for constructing Src objects
-inline Src<0> project(std::string_view str) { return {str}; }
-inline Src<1> module(std::string_view str) { return {str}; }
-inline Src<2> scope(std::string_view str) { return {str}; }
-
-// Literals to easily create source or source level objects.
-// Can e.g. be used like this: dlg_log("my_project"_project, "my_class"_src1, "A string");
-// Alternatively, a string can be parsed: dlg_log("my_proj::my_mod::my_scope"_src, "A string");
-// If you want to use those, 'using namespace dlg::literals'.
+// Literals to easily create a tag
 namespace literals {
-	inline Src<0> operator"" _src0(const char* s, std::size_t n) { return {{s, n}}; }
-	inline Src<1> operator""_src1(const char* s, std::size_t n) { return {{s, n}}; }
-	inline Src<2> operator"" _src2(const char* s, std::size_t n) { return {{s, n}}; }
-
-	inline Src<0> operator"" _project(const char* s, std::size_t n) { return {{s, n}}; }
-	inline Src<1> operator""_module(const char* s, std::size_t n) { return {{s, n}}; }
-	inline Src<2> operator"" _scope(const char* s, std::size_t n) { return {{s, n}}; }
-
-	inline Source operator""_src(const char* s, std::size_t n) { return source({s, n}); }
-}
-
-// Strips the base path from the given file name.
-// file is usually taken from __FILE__ and base DLG_BASE_PATH.
-// If it detects that file is relative, will only strip away the relative beginning, otherwise
-// will strip the given base path.
-std::string_view strip_path(std::string_view file, std::string_view base);
+	inline Tag operator"" _tag(const char* s, std::size_t n) { return {{s, n}}; }
+} // namespace literals
 
 // -- Logging macros --
+#ifdef DLG_DISABLE
+
+	#define dlg_trace(...) {}
+	#define dlg_debug(...) {}
+	#define dlg_info(...) {}
+	#define dlg_warn(...) {}
+	#define dlg_error(...) {}
+	#define dlg_critical(...) {}
+	#define dlg_assert_debug(...) {}
+	#define dlg_assert_warn(...) {}
+	#define dlg_assert_error(...) {}
+	#define dlg_assert_critical(...) {}
+	#define dlg_check(code) {}
+	#define dlg_check_tagged(tags, code) {}
+	#define dlg_tag(...) {}
+	#define dlg_tag_global(...) {}
+	#define dlg_log(...) {}
+	#define dlg_assert(...) {}
+
+#else // DLG_DISABLE
+
 #if DLG_LOG_LEVEL <= DLG_LEVEL_TRACE
-	#define dlg_trace(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::trace)(__VA_ARGS__)
+	#define dlg_trace(...) dlg::detail::do_log(DLG_FILE, __LINE__, \
+		__FUNCTION__, dlg::Level::trace)(__VA_ARGS__)
 #else
 	#define dlg_trace(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_DEBUG
-	#define dlg_debug(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::debug)(__VA_ARGS__)
+	#define dlg_debug(...) dlg::detail::do_log(DLG_FILE, __LINE__, \
+		__FUNCTION__, dlg::Level::debug)(__VA_ARGS__)
 #else
 	#define dlg_debug(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_INFO
-	#define dlg_info(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::info)(__VA_ARGS__)
+	#define dlg_info(...) dlg::detail::do_log(DLG_FILE, __LINE__, \
+		__FUNCTION__, dlg::Level::info)(__VA_ARGS__)
 #else
 	#define dlg_info(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_WARN
-	#define dlg_warn(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::warn)(__VA_ARGS__)
+	#define dlg_warn(...) dlg::detail::do_log(DLG_FILE, __LINE__, \
+		__FUNCTION__, dlg::Level::warn)(__VA_ARGS__)
 #else
 	#define dlg_warn(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_ERROR
-	#define dlg_error(...) dlg::do_log(DLG_FILE, __LINE__,  __FUNCTION__, dlg::Level::error)(__VA_ARGS__)
+	#define dlg_error(...) dlg::detail::do_log(DLG_FILE, __LINE__,  \
+		__FUNCTION__, dlg::Level::error)(__VA_ARGS__)
 #else
 	#define dlg_error(...) {}
 #endif
 
 #if DLG_LOG_LEVEL <= DLG_LEVEL_CRITICAL
-	#define dlg_critical(...) dlg::do_log(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::critical)(__VA_ARGS__)
+	#define dlg_critical(...) dlg::detail::do_log(DLG_FILE, __LINE__, \
+		__FUNCTION__, dlg::Level::critical)(__VA_ARGS__)
 #else
 	#define dlg_critical(...) {}
 #endif
@@ -234,7 +153,7 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 // -- Assertion macros --
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_DEBUG
 	#define dlg_assert_debug(...) \
-		dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::debug, \
+		dlg::detail::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::debug, \
 			DLG_MM_FIRST_STR(__VA_ARGS__))(__VA_ARGS__)
 #else
 	#define dlg_assert_debug(expr, ...) {}
@@ -242,7 +161,7 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_WARN
 	#define dlg_assert_warn(...) \
-		dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::warn, \
+		dlg::detail::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::warn, \
 			DLG_MM_FIRST_STR(__VA_ARGS__))(__VA_ARGS__)
 #else
 	#define dlg_assert_warn(expr, ...) {}
@@ -250,7 +169,7 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_ERROR
 	#define dlg_assert_error(...) \
-		dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::error, \
+		dlg::detail::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::error, \
 			DLG_MM_FIRST_STR(__VA_ARGS__))(__VA_ARGS__)
 #else
 	#define dlg_assert_error(...) {}
@@ -258,7 +177,7 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 
 #if DLG_ASSERT_LEVEL <= DLG_LEVEL_CRITICAL
 	#define dlg_assert_critical(...) \
-		dlg::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::critical, \
+		dlg::detail::do_assert(DLG_FILE, __LINE__, __FUNCTION__, dlg::Level::critical, \
 			DLG_MM_FIRST_STR(__VA_ARGS__))(__VA_ARGS__)
 #else
 	#define dlg_assert_critical(expr, ...) {}
@@ -266,9 +185,9 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 
 // -- Debug check scope --
 #if DLG_CHECK
-	#define dlg_check_unnamed(code) { code }
-	#define dlg_check(scope, code) {  \
-		::dlg::SourceGuard dlg_check_scope_guard(scope, __FUNCTION__); \
+	#define dlg_check(code) { code }
+	#define dlg_check_tagged(tags, code) {  \
+		const ::dlg::TagsGuard _dlg_check_tag_guard(tags, __FUNCTION__); \
 		code \
 	}
 #else
@@ -277,8 +196,8 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 #endif
 
 // -- Scope guard macros
-#define dlg_source(...) ::dlg::SourceGuard _dlg_local_source_guard({__VA_ARGS__}, __FUNCTION__);
-#define dlg_source_global(...) ::dlg::SourceGuard _dlg_local_source_guard({__VA_ARGS__});
+#define dlg_tag(...) const ::dlg::TagsGuard _dlg_local_tag_guard({__VA_ARGS__}, __FUNCTION__);
+#define dlg_tag_global(...) const ::dlg::TagsGuard _dlg_local_global_tag_guard({__VA_ARGS__});
 
 // -- Utility macro magic --
 #define DLG_MM_PASTE(x,y) x ## _ ## y
@@ -291,39 +210,19 @@ std::string_view strip_path(std::string_view file, std::string_view base);
 #define dlg_log(...) DLG_MM_EVALUATE(dlg, DLG_DEFAULT_LOG)(__VA_ARGS__)
 #define dlg_assert(...) DLG_MM_EVALUATE(dlg_assert, DLG_DEFAULT_ASSERT)(__VA_ARGS__)
 
+#endif // DLG_DISABLE
 
 // -- Implementation --
-// -- Output, Source detection --
 // Bridge to output.hpp, will call the current outputHandler with the given arguments
 void do_output(Origin& origin, std::string_view msg);
 
-template<typename... Args>
-void output(Origin& origin, Src<0> src0, Args&&... args)
-{
-	origin.source.src[0] = src0.name;
-	output(origin, std::forward<Args>(args)...);
-}
+namespace detail {
 
-template<typename... Args>
-void output(Origin& origin, Src<1> src1, Args&&... args)
-{
-	origin.source.src[1] = src1.name;
-	output(origin, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void output(Origin& origin, Src<2> src2, Args&&... args)
-{
-	origin.source.src[2] = src2.name;
-	output(origin, std::forward<Args>(args)...);
-}
-
-template<typename... Args>
-void output(Origin& origin, Source src, Args&&... args)
-{
-	apply_source(src, origin.source);
-	output(origin, std::forward<Args>(args)...);
-}
+// Strips the base path from the given file name.
+// file is usually taken from __FILE__ and base DLG_BASE_PATH.
+// If it detects that file is relative, will only strip away the relative beginning, otherwise
+// will strip the given base path.
+std::string_view strip_path(std::string_view file, std::string_view base);
 
 template<typename... Args>
 void output(Origin& origin, Args&&... args)
@@ -335,6 +234,13 @@ void output(Origin& origin, Args&&... args)
 
 	auto msg = fmt::format(std::forward<Args>(args)...);
 	do_output(origin, msg);
+}
+
+template<typename... Args>
+void output(Origin& origin, Tag tag, Args&&... args)
+{
+	origin.tags.push_back(tag.tag);
+	output(origin, std::forward<Args>(args)...);
 }
 
 #ifndef DLG_DISABLE_EMPTY_LOG
@@ -350,8 +256,7 @@ struct LogDummy {
 	Origin origin {};
 
 	template<typename... Args>
-	void operator()(Args&&... args)
-	{
+	void operator()(Args&&... args) {
 		output(origin, std::forward<Args>(args)...);
 	}
 };
@@ -360,12 +265,25 @@ struct AssertDummy {
 	Origin origin;
 
 	template<typename E, typename... Args>
-	void operator()(const E& expr, Args&&... args)
-	{
+	void operator()(const E& expr, Args&&... args) {
 		if(!(expr))
 			output(origin, std::forward<Args>(args)...);
 	}
 };
+
+inline void init_origin(Origin& origin, std::string_view func)
+{
+#ifdef DLG_DEFAULT_TAGS
+	auto dtags = DLG_DEFAULT_TAGS;
+	origin.tags.insert(origin.tags.end(), dtags.begin(), dtags.end());
+#endif
+
+	for(auto ctag : current_tags_ref()) {
+		if(!ctag->func || ctag->func == func) {
+			origin.tags.push_back(ctag->tag);
+		}
+	}
+}
 
 // -- Macro functions --
 inline LogDummy do_log(std::string_view file, unsigned int line,
@@ -373,9 +291,7 @@ inline LogDummy do_log(std::string_view file, unsigned int line,
 {
 	LogDummy ret;
 	ret.origin = {file, line, level, {}};
-	if(!current_source().func || func == current_source().func)
-		apply_source(current_source(), ret.origin.source);
-
+	init_origin(ret.origin, func);
 	return ret;
 }
 
@@ -384,34 +300,11 @@ inline AssertDummy do_assert(std::string_view file, unsigned int line,
 {
 	AssertDummy ret;
 	ret.origin = {file, line, level, {}, expr};
-	if(!current_source().func || func == current_source().func)
-		apply_source(current_source(), ret.origin.source);
-
+	init_origin(ret.origin, func);
 	return ret;
 }
 
+} // namespace detail
 } // namespace dlg
 
-#else // DLG_DISABLE
-
-	#define dlg_trace(...) {}
-	#define dlg_debug(...) {}
-	#define dlg_info(...) {}
-	#define dlg_warn(...) {}
-	#define dlg_error(...) {}
-	#define dlg_critical(...) {}
-	#define dlg_assert_debug(expr, ...) {}
-	#define dlg_assert_warn(expr, ...) {}
-	#define dlg_assert_error(expr, ...) {}
-	#define dlg_assert_critical(expr, ...) {}
-	#define dlg_check_unnamed(code) {}
-	#define dlg_check(scope, code) {}
-	#define dlg_source(...) {}
-	#define dlg_source_global(...) {}
-	#define dlg_log(...) {}
-	#define dlg_assert(expr, ...) {}
-
-	namespace literals {};
-
-#endif // DLG_DISABLE
 #endif // header guard

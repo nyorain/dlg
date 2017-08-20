@@ -175,11 +175,6 @@ std::string default_message(const Origin& origin, std::string_view msg)
 {
 	std::string ret;
 	ret += "[";
-
-	auto src = source_string(origin.source);
-	if(!src.empty())
-		ret.append(src).append(" | ");
-
 	ret.append(origin.file).append(":").append(std::to_string(origin.line));
 	ret.append("] ");
 
@@ -220,72 +215,6 @@ void generic_output_handler(std::ostream& os, const Origin& origin, std::string_
 	} else {
 		default_output(os, str);
 	}
-}
-
-Source source(std::string_view str, Source::Force force, std::string_view sep) {
-	Source ret {};
-	ret.force = force;
-
-	for(auto i = 0u; i < 3; ++i) {
-		auto pos = str.find(sep);
-		ret.src[i] = str.substr(0, pos);
-
-		if(pos == str.npos)
-			return ret;
-
-		str.remove_prefix(pos + sep.length());
-	}
-
-	return ret;
-}
-
-std::string source_string(const Source& src, unsigned int lvl, std::string_view sep) {
-	std::string ret;
-	ret.reserve(50);
-
-	bool first = true;
-	lvl = std::min(lvl, 3u);
-	for(auto i = 0u; i < lvl; ++i) {
-		auto level = src.src[i];
-		if(!level.empty()) {
-			if(first) first = false;
-			else ret += sep;
-			ret += level;
-		}
-	}
-
-	return ret;
-}
-
-void apply_source(const Source& src1, Source& src2, Source::Force force)
-{
-	using F = Source::Force;
-	if(force == F::none)
-		force = src1.force;
-
-	if(force == F::full) {
-		src2.src = src1.src;
-		return;
-	}
-
-	for(auto i = 0u; i < 3u; ++i)
-		if(!src1.src[i].empty() && (src2.src[i].empty() || force == F::override))
-			src2.src[i] = src1.src[i];
-}
-
-std::string_view strip_path(std::string_view file, std::string_view base)
-{
-	if(file.empty())
-		return file;
-
-	if(file[0] == '.') {
-		auto i = 0u;
-		for(; i < file.size() && (file[i] == '.' || file[i] == '/'); ++i);
-		return file.substr(i);
-	}
-
-	const auto start = base.length();
-	return file.substr(start > file.size() ? 0 : start);
 }
 
 std::string escape_sequence(TextStyle style)
@@ -332,10 +261,10 @@ OutputHandler& output_handler()
 	return handler;
 }
 
-CurrentSource& current_source()
+std::vector<CurrentTag*>& current_tags_ref()
 {
-	thread_local CurrentSource source = {};
-	return source;
+	thread_local std::vector<CurrentTag*> tags = {};
+	return tags;
 }
 
 void do_output(Origin& origin, std::string_view msg)
@@ -343,17 +272,43 @@ void do_output(Origin& origin, std::string_view msg)
 	return output_handler()(origin, msg);
 }
 
-SourceGuard::SourceGuard(const Source& source, const char* func) : old(current_source())
+TagsGuard::TagsGuard(std::initializer_list<std::string_view> tags, const char* func)
 {
-	apply_source(source, current_source());
-	current_source().func = func;
+	auto ref = current_tags_ref();
+	for(auto tag : tags) {
+		tags_.push_back({tag, func});
+	}
+
+	for(auto& tag : tags_) {
+		ref.push_back(&tag);
+	}
 }
 
-SourceGuard::~SourceGuard()
+TagsGuard::~TagsGuard()
 {
-	current_source() = old;
+	auto ref = current_tags_ref();
+	std::remove_if(ref.begin(), ref.end(), [&](auto& ctag) {
+		return ctag >= tags_.data() && ctag < tags_.data() + tags_.size();
+	});
 }
 
+namespace detail {
+std::string_view strip_path(std::string_view file, std::string_view base)
+{
+	if(file.empty())
+		return file;
+
+	if(file[0] == '.') {
+		auto i = 0u;
+		for(; i < file.size() && (file[i] == '.' || file[i] == '/'); ++i);
+		return file.substr(i);
+	}
+
+	const auto start = base.length();
+	return file.substr(start > file.size() ? 0 : start);
+}
+
+} // namespace detail
 } // namespace dlg
 
 #endif // header guard
