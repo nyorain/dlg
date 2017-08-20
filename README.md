@@ -20,8 +20,7 @@ having read the example though:
 ![Here should a beautiful picture of dlg in action be erected. What a shame!](doc/example_crop.png)
 
 Note though that dlg can be used without weird dummy messages as well.
-Building the sample can be enabled by passing the 'sample' argument as true to
-cmake or meson.
+Building the sample can be enabled by passing the 'sample' argument as true to meson.
 
 ## Ideas and todo
 
