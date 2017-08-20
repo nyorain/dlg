@@ -32,6 +32,7 @@ cmake or meson.
 - [x] custom (changeable) base paths (for nested projects/header calls) __[DLG_FILE]__
 - [x] possibility to get current scope (or more general: exception support)
 - [x] make default scope signs customizable by macro
+- [ ] update picture for tags update
 - [ ] unit tests (at least some basic stuff)
 
 Make probably no sense:
@@ -43,6 +44,8 @@ Make probably no sense:
 		- [ ] ~~warn about unused but passed variables~~
 - [ ] add field to Origin that determines whether the origin is inside a dlg::check block?
 - [ ] dynamic/variable Src<> count
+
+- maybe put the output stuff in a different namespace? dlg::output
 
 
 __Contributions of all kind are welcome, this is nothing too serious though (kinda like life)__

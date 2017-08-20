@@ -16,7 +16,9 @@
 //   - defaulted to debug
 // - DLG_DEFAULT_ASSERT, one of the (lowercase) log levels, used for the dlg_assert default macro
 //   - defaulted to error
-// - DLG_DEFAULT_SEP the default separator to use to parse and output a source, "::" by default
+// - DLG_DEFAULT_TAGS, not defined by default. If defined before including dlg.hpp all
+//    calls will have the given tags added. They must be in form {"tag1", "tag2", "tag3"}
+//    Could be use to associate a tag with all dlg calls in a file.
 // - DLG_FILE, the current file, defined as dlg::stripPath(__FILE__) per default
 //   - if this is defined it will be use instead of stripping the __FILE__ macro
 //   - may e.g. be set from the build system for custom file paths
@@ -79,16 +81,12 @@
 	#define DLG_DEFAULT_ASSERT error
 #endif
 
-#ifndef DLG_DEFAULT_SEP
-	#define DLG_DEFAULT_SEP "::"
-#endif
-
 // DLG_FILE
 #ifndef DLG_FILE
 	#ifndef DLG_BASE_PATH
 		#define DLG_BASE_PATH ""
 	#endif
-	#define DLG_FILE ::dlg::strip_path(__FILE__, DLG_BASE_PATH)
+	#define DLG_FILE ::dlg::detail::strip_path(__FILE__, DLG_BASE_PATH)
 #endif
 
 // DLG_EMPTY_LOG
