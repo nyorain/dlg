@@ -52,6 +52,7 @@ struct Tag {
 struct Origin {
 	std::string_view file;
 	unsigned int line;
+	std::string_view func;
 	Level level;
 	std::vector<std::string_view> tags;
 	std::string_view expr = nullptr; // assertion expression, nullptr for logging
@@ -290,7 +291,7 @@ inline LogDummy do_log(std::string_view file, unsigned int line,
 	std::string_view func, Level level)
 {
 	LogDummy ret;
-	ret.origin = {file, line, level, {}};
+	ret.origin = {file, line, func, level, {}};
 	init_origin(ret.origin, func);
 	return ret;
 }
@@ -299,7 +300,7 @@ inline AssertDummy do_assert(std::string_view file, unsigned int line,
 	std::string_view func, Level level, const char* expr)
 {
 	AssertDummy ret;
-	ret.origin = {file, line, level, {}, expr};
+	ret.origin = {file, line, func, level, {}, expr};
 	init_origin(ret.origin, func);
 	return ret;
 }

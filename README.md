@@ -44,6 +44,7 @@ Make probably no sense:
 - [ ] add field to Origin that determines whether the origin is inside a dlg::check block?
 
 - maybe put the output stuff in a different namespace? dlg::output
+- tag order? make it modifiable or define it somewhere at least? should they be used in an ordered way?
 
 
 __Contributions of all kind are welcome, this is nothing too serious though (kinda like life)__
