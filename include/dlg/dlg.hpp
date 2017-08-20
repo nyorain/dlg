@@ -95,16 +95,16 @@ namespace literals {
 	#define dlg_warn(...) {}
 	#define dlg_error(...) {}
 	#define dlg_critical(...) {}
-	#define dlg_assert_debug(expr, ...) {}
-	#define dlg_assert_warn(expr, ...) {}
-	#define dlg_assert_error(expr, ...) {}
-	#define dlg_assert_critical(expr, ...) {}
-	#define dlg_check_unnamed(code) {}
-	#define dlg_check(scope, code) {}
+	#define dlg_assert_debug(...) {}
+	#define dlg_assert_warn(...) {}
+	#define dlg_assert_error(...) {}
+	#define dlg_assert_critical(...) {}
+	#define dlg_check(code) {}
+	#define dlg_check_tagged(tags, code) {}
 	#define dlg_tag(...) {}
 	#define dlg_tag_global(...) {}
 	#define dlg_log(...) {}
-	#define dlg_assert(expr, ...) {}
+	#define dlg_assert(...) {}
 
 #else // DLG_DISABLE
 
@@ -275,7 +275,7 @@ inline void init_origin(Origin& origin, std::string_view func)
 {
 #ifdef DLG_DEFAULT_TAGS
 	auto dtags = DLG_DEFAULT_TAGS;
-	origin.tags.insert(dtags.begin(), dtags.begin() + dtags.size());
+	origin.tags.insert(origin.tags.end(), dtags.begin(), dtags.end());
 #endif
 
 	for(auto ctag : current_tags_ref()) {

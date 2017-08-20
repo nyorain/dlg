@@ -39,11 +39,10 @@ Make probably no sense:
 
 - [ ] rework/further strip fmt.hpp
 	- [ ] since it is parsed to some type-erased list anyways, don't include the whole header
-	- [ ] ~~constexpr string parsing~~ __[Not really worth it i guess]__
+	- [ ] ~~constexpr string parsing~~ __[Not really worth it/fully possible i guess]__
 		- [ ] ~~warn about format issues~~
 		- [ ] ~~warn about unused but passed variables~~
 - [ ] add field to Origin that determines whether the origin is inside a dlg::check block?
-- [ ] dynamic/variable Src<> count
 
 - maybe put the output stuff in a different namespace? dlg::output
 

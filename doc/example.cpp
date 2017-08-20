@@ -28,7 +28,7 @@ int main()
 
 	// the string literals prefix only work when using
 	// the dlg::literals namespace like done in this file
-	// alternatively use can simply construct a tag with dlg::Tag{"name"}
+	// alternatively simply construct a tag with dlg::Tag{"name"}
 	dlg_info("main"_tag, "Use dlg tags to show where a log call came from");
 	dlg_info("main"_tag, "We are in the main function");
 	dlg_info("main"_tag, "That can also be done using a scoped tag guard");
@@ -65,7 +65,7 @@ int main()
 		if(origin.level < dlg::Level::warn)
 			return;
 
-		// we could e.g. also filter out certain tags
+		// we can e.g. also filter out certain tags
 		if(std::find(origin.tags.begin(), origin.tags.end(), "filtered") != origin.tags.end())
 			return;
 
@@ -75,7 +75,7 @@ int main()
 		// it came from an assert call and then write it without color to a file stream.
 		// everything else is dumped with color to cout
 		// NOTE: the simple color switch here will lead to troubles when cout
-		// is e.g. redirected to a file (but could be useful when using unix's 'less -R')
+		// is e.g. redirected to a file (but could be useful again when using unix's 'less -R')
 		std::ostream* os = &std::cout;
 		bool use_color = true;
 		if(!origin.expr.empty()) {
