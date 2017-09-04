@@ -41,6 +41,6 @@ install(DIRECTORY include/dlg DESTINATION include)
 
 # sample
 if(Sample)
-	add_executable(sample "doc/example.cpp")
+	add_executable(sample "docs/example.cpp")
 	target_link_libraries(sample dlg)
 endif()

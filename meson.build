@@ -41,7 +41,7 @@ dlg_dep = declare_dependency(
 
 # sample
 if build_sample
-	sample = executable('sample', 'doc/example.cpp', dependencies: dlg_dep)
+	sample = executable('sample', 'docs/example.cpp', dependencies: dlg_dep)
 endif
 
 # install

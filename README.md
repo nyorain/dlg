@@ -12,39 +12,14 @@ at some point i may no longer want to maintain the cmake version).
 
 ## Show me something already
 
-Thousands words, explanations and pictures don't say as much as a single __[code example](doc/example.cpp)__.
+Thousands words, explanations and pictures don't say as much as a single __[code example](docs/example.cpp)__.
 
 Nontheless a rather beautiful picture of dlg in action for you. It is probably rather nonsensical without
 having read the example though:
 
-![Here should a beautiful picture of dlg in action be erected. What a shame!](doc/example_crop.png)
+![Here should a beautiful picture of dlg in action be erected. What a shame!](docs/example.png)
 
 Note though that dlg can be used without weird dummy messages as well.
 Building the sample can be enabled by passing the 'sample' argument as true to meson.
-
-## Ideas and todo
-
-- [x] windows utf-8 output (see ny)
-- [x] windows text style support
-- [x] assert without error message
-- [x] add real example and screenshot
-- [x] custom (changeable) base paths (for nested projects/header calls) __[DLG_FILE]__
-- [x] possibility to get current scope (or more general: exception support)
-- [x] make default scope signs customizable by macro
-- [ ] update picture for tags update
-- [ ] unit tests (at least some basic stuff)
-
-Make probably no sense:
-
-- [ ] rework/further strip fmt.hpp
-	- [ ] since it is parsed to some type-erased list anyways, don't include the whole header
-	- [ ] ~~constexpr string parsing~~ __[Not really worth it/fully possible i guess]__
-		- [ ] ~~warn about format issues~~
-		- [ ] ~~warn about unused but passed variables~~
-- [ ] add field to Origin that determines whether the origin is inside a dlg::check block?
-
-- maybe put the output stuff in a different namespace? dlg::output
-- tag order? make it modifiable or define it somewhere at least? should they be used in an ordered way?
-
 
 __Contributions of all kind are welcome, this is nothing too serious though (kinda like life)__
