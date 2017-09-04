@@ -192,8 +192,8 @@ namespace literals {
 		code \
 	}
 #else
-	#define dlg_check_unnamed(code) {}
-	#define dlg_check(scope, code) {}
+	#define dlg_check(code) {}
+	#define dlg_check_tagged(tags, code) {}
 #endif
 
 // -- Scope guard macros
