@@ -26,7 +26,7 @@ int main()
 	dlg_error("An error log");
 	dlg_critical("A critical log");
 
-	// the string literals prefix only work when using
+	// the string literals suffix only work when using
 	// the dlg::literals namespace like done in this file
 	// alternatively simply construct a tag with dlg::Tag{"name"}
 	dlg_info("main"_tag, "Use dlg tags to show where a log call came from");
