@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <list>
 
 #include "fmt.hpp"
 #include "config.hpp"
@@ -66,7 +67,8 @@ struct CurrentTag : public Tag {
 };
 
 // Retrieves the current tags in the calling thread.
-std::vector<CurrentTag*>& current_tags_ref();
+// Uses as list to make it easy to remove inserted items.
+std::list<CurrentTag>& current_tags_ref();
 
 // RAII guard that adds current tags for its lifetime
 class TagsGuard {
@@ -79,7 +81,8 @@ public:
 	TagsGuard& operator=(const TagsGuard&) = delete;
 
 protected:
-	std::vector<CurrentTag> tags_;
+	using Iterator = typename std::list<CurrentTag>::iterator;
+	std::vector<Iterator> refs_;
 };
 
 // Literals to easily create a tag
@@ -225,40 +228,32 @@ namespace detail {
 // will strip the given base path.
 std::string_view strip_path(std::string_view file, std::string_view base);
 
-template<typename... Args>
+template<bool Ass, typename... Args>
 void output(Origin& origin, Args&&... args)
 {
-	// we only land in this function with 0 arguments if empty logging is disabled,
-	// see the additional function below. This is more helpful than
-	// an error about the fmt::format function
-	static_assert(sizeof...(args) > 0, "Empty logging is not allowed");
-
-	auto msg = fmt::format(std::forward<Args>(args)...);
-	do_output(origin, msg);
+	if constexpr(sizeof...(Args) == 0) {
+#ifdef DLG_DISABLE_EMPTY_LOG
+		static_assert(Ass, "Empty logging is not allowed");
+#endif // DLG_DISABLE_EMPTY_LOG
+		do_output(origin, origin.expr.empty() ? "" : DLG_EMPTY_LOG);
+	} else {
+		do_output(origin, fmt::format(std::forward<Args>(args)...));
+	}
 }
 
-template<typename... Args>
+template<bool Ass, typename... Args>
 void output(Origin& origin, Tag tag, Args&&... args)
 {
 	origin.tags.push_back(tag.tag);
-	output(origin, std::forward<Args>(args)...);
+	output<Ass>(origin, std::forward<Args>(args)...);
 }
-
-#ifndef DLG_DISABLE_EMPTY_LOG
-
-inline void output(Origin& origin)
-{
-	do_output(origin, origin.expr.empty() ? "" : DLG_EMPTY_LOG);
-}
-
-#endif // DLG_DISABLE_EMPTY_LOG
 
 struct LogDummy {
 	Origin origin {};
 
 	template<typename... Args>
 	void operator()(Args&&... args) {
-		output(origin, std::forward<Args>(args)...);
+		output<false>(origin, std::forward<Args>(args)...);
 	}
 };
 
@@ -268,11 +263,11 @@ struct AssertDummy {
 	template<typename E, typename... Args>
 	void operator()(const E& expr, Args&&... args) {
 		if(!(expr))
-			output(origin, std::forward<Args>(args)...);
+			output<true>(origin, std::forward<Args>(args)...);
 	}
 };
 
-inline void init_origin(Origin& origin, std::string_view func)
+inline void init_origin(Origin& origin)
 {
 #ifdef DLG_DEFAULT_TAGS
 	auto dtags = DLG_DEFAULT_TAGS;
@@ -280,8 +275,8 @@ inline void init_origin(Origin& origin, std::string_view func)
 #endif
 
 	for(auto ctag : current_tags_ref()) {
-		if(!ctag->func || ctag->func == func) {
-			origin.tags.push_back(ctag->tag);
+		if(!ctag.func || ctag.func == origin.func) {
+			origin.tags.push_back(ctag.tag);
 		}
 	}
 }
@@ -292,7 +287,7 @@ inline LogDummy do_log(std::string_view file, unsigned int line,
 {
 	LogDummy ret;
 	ret.origin = {file, line, func, level, {}};
-	init_origin(ret.origin, func);
+	init_origin(ret.origin);
 	return ret;
 }
 
@@ -301,7 +296,7 @@ inline AssertDummy do_assert(std::string_view file, unsigned int line,
 {
 	AssertDummy ret;
 	ret.origin = {file, line, func, level, {}, expr};
-	init_origin(ret.origin, func);
+	init_origin(ret.origin);
 	return ret;
 }
 

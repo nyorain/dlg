@@ -4,6 +4,7 @@ project('dlg', 'cpp',
 
 build_library = get_option('library')
 build_sample = get_option('sample')
+tests = get_option('tests')
 
 # dep variables depending on build type
 inc = include_directories('include')
@@ -42,6 +43,11 @@ dlg_dep = declare_dependency(
 # sample
 if build_sample
 	sample = executable('sample', 'docs/example.cpp', dependencies: dlg_dep)
+endif
+
+# tests
+if tests
+	subdir('docs/tests')
 endif
 
 # install

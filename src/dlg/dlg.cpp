@@ -261,9 +261,9 @@ OutputHandler& output_handler()
 	return handler;
 }
 
-std::vector<CurrentTag*>& current_tags_ref()
+std::list<CurrentTag>& current_tags_ref()
 {
-	thread_local std::vector<CurrentTag*> tags = {};
+	thread_local std::list<CurrentTag> tags = {};
 	return tags;
 }
 
@@ -274,22 +274,19 @@ void do_output(Origin& origin, std::string_view msg)
 
 TagsGuard::TagsGuard(std::initializer_list<std::string_view> tags, const char* func)
 {
-	auto ref = current_tags_ref();
+	auto& ref = current_tags_ref();
+	refs_.reserve(tags.size());
 	for(auto tag : tags) {
-		tags_.push_back({tag, func});
-	}
-
-	for(auto& tag : tags_) {
-		ref.push_back(&tag);
+		refs_.push_back(ref.insert(ref.end(), {tag, func}));
 	}
 }
 
 TagsGuard::~TagsGuard()
 {
-	auto ref = current_tags_ref();
-	std::remove_if(ref.begin(), ref.end(), [&](auto& ctag) {
-		return ctag >= tags_.data() && ctag < tags_.data() + tags_.size();
-	});
+	auto& ref = current_tags_ref();
+	for(auto& it : refs_) {
+		ref.erase(it);
+	}
 }
 
 namespace detail {

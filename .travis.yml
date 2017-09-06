@@ -1,0 +1,31 @@
+sudo: false
+language: cpp
+group: beta
+
+notifications:
+  email: false
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-7', 'valgrind']
+      env:
+        - CC=g++-7 CXX=g++-7
+
+install:
+  - export PATH="`pwd`/build:${PATH}"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-linux.zip && unzip -q ninja-linux.zip -d build; fi
+  - pip3 install meson
+
+script:
+  - meson build -Dtest=true -Dsample=true
+  - cd build
+  - ninja
+  - ./sample
+  - meson test --wrapper valgrind
+  - cat meson-logs/testlog-valgrind.txt
