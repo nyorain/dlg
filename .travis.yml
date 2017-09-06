@@ -25,9 +25,9 @@ install:
 script:
   - export CC=gcc-7
   - export CXX=g++-7
-  - meson build -Dtest=true -Dsample=true
+  - meson build -Dtests=true -Dsample=true
   - cd build
   - ninja
   - ./sample
   - meson test --wrapper valgrind
-  - cat meson-logs/testlog-valgrind.txt
+  - "cat meson-logs/testlog-valgrind.txt | : "
