@@ -15,7 +15,7 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-7', 'valgrind']
       env:
-        - CC=g++-7 CXX=g++-7
+        - COMPILER=g++-7
 
 install:
   - export PATH="`pwd`/build:${PATH}"
@@ -23,6 +23,8 @@ install:
   - pip3 install meson
 
 script:
+  - export CC=gcc-7
+  - export CXX=g++-7
   - meson build -Dtest=true -Dsample=true
   - cd build
   - ninja

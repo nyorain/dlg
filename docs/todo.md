@@ -8,7 +8,7 @@
 - [x] possibility to get current scope (or more general: exception support)
 - [x] make default scope signs customizable by macro
 - [ ] update picture for tags update
-- [ ] unit tests (at least some basic stuff) + ci (travis)
+- [x] unit tests (at least some basic stuff) + ci (travis)
 - [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
 - [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
 - [ ] decide on whether to catch exceptions from assert expressions. Config variable?
