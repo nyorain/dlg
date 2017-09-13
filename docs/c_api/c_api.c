@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define DLG_DISABLE
+// #define DLG_DISABLE
 
 #ifdef __GNUC__
 	#define DLG_PRINTF_ATTRIB(a, b) __attribute__ ((format (printf, a, b)))
@@ -26,7 +26,7 @@ extern "C" {
 // #include "config.h"
 // TODO: make 100% sure the library of the c api does not depend on config.h!
 #define DLG_FILE "todo"
-#define DLG_FMT_FUNC dlg_printf_format
+#define DLG_FMT_FUNC dlg__printf_format
 
 #define DLG_LOG_LEVEL dlg_level_trace
 #define DLG_ASSERT_LEVEL dlg_level_trace
@@ -88,13 +88,6 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// undefined which.
 	inline void dlg_remove_tag(const char* tag, const char* func) {}
 
-	// - private interface, only use if you know what you are doing -
-	// Formats the given format string and arguments as printf would.
-	// The returned string is only guaranteed to be valid in the current logging
-	// call - therefore don't use this function externally.
-	inline char* dlg_printf_format(const char* str, ...) DLG_PRINTF_ATTRIB(1, 2);
-	inline char* dlg_printf_format(const char* str, ...) { return NULL; }
-
 	// Returns the thread buffer for dlg formatting functions.
 	// Might be used by every format function. The buffer might be resized and
 	// the size changed. Don't use this if you are not a format function that
@@ -121,6 +114,35 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	char* dlg_printf_format(const char* str, ...) DLG_PRINTF_ATTRIB(1, 2);
 	char** dlg_thread_buffer(unsigned int** size);
 
+	// NOTE: private interface, only use if you know what you are doing
+	// Might change at any time. Also note that those functions are not
+	// even defined when dlg is disabled so just don't use them.
+	// They are only here because they are needed in macro/inline functions.
+
+	// Formats the given format string and arguments as printf would.
+	// The returned string is only guaranteed to be valid in the current logging call.
+	char* dlg__printf_format(const char* str, ...) DLG_PRINTF_ATTRIB(1, 2);
+
+	unsigned int dlg__push_tags(const char** tags); // push given null-terminated tags list
+	void dlg__pop_tags(unsigned int count); // pops the given number of tags.
+	const char** dlg__get_tags(); // Returns the current tags buffer
+	dlg_handler dlg__get_handler(); // Returns the global handler
+	void* dlg__get_handler_data(); // Returns the global handler data
+
+	inline void dlg__do_log(enum dlg_level lvl, const char* file, int line, const char* func,
+			char* string, const char* expr) {
+		const struct dlg_origin origin = {file, line, func, lvl, dlg__get_tags(), expr};
+		dlg__get_handler()(&origin, string, dlg__get_handler_data());
+	}
+
+	inline void dlg__do_logt(enum dlg_level lvl, const char** tags, const char* file, int line,
+			const char* func, char* string, const char* expr) {
+		unsigned int tagc = dlg__push_tags(tags);
+		const struct dlg_origin origin = {file, line, func, lvl, dlg__get_tags(), expr};
+		dlg__get_handler()(&origin, string, dlg__get_handler_data());
+		dlg__pop_tags(tagc);
+	}
+
 #endif // DLG_DISABLE
 
 // Untagged leveled logging
@@ -139,29 +161,15 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 #define dlg_errort(tags, ...) dlg_logt(dlg_level_error, tags, __VA_ARGS__)
 #define dlg_criticalt(tags, ...) dlg_logt(dlg_level_critical, tags, __VA_ARGS__)
 
-// utility
-#define DLG_CREATE_TAGS(...) (const char*[]) {__VA_ARGS__, DLG_DEFAULT_TAGS, NULL}
-#define DLG_EVAL(...) __VA_ARGS__
-
 // Assert macros useing DLG_DEFAULT_ASSERT as level (defaulted to error)
 #define dlg_assert(expr, ...) dlg_assert_l(expr, DLG_DEFAULT_ASSERT, __VA_ARGS__)
 #define dlg_assertt(expr, tags, ...) dlg_assert_ln(expr, DLG_DEFAULT_ASSERT, tags, __VA_ARGS__)
 
-// TODO: dlg_tag ...
-#ifdef DLG_CHECK // todo
-	#define dlg_check(code) { code }
-	#define dlg_checkt(tags, code) dlg_tag(tags, code)
-#else
-	#define dlg_check(code)
-	#define dlg_checkt(tags, code)
-#endif // DLG_CHECK
+// utility
+#define DLG_CREATE_TAGS(...) (const char*[]) {__VA_ARGS__, DLG_DEFAULT_TAGS, NULL}
+#define DLG_EVAL(...) __VA_ARGS__
 
 // TODO: move into disable/not-disable section?
-void dlg_do_log(enum dlg_level lvl, const char* file, int line, const char* func,
-	char* string, const char* expr);
-void dlg_do_logt(enum dlg_level lvl, const char** tags, const char* file, int line,
-	const char* func, char* string, const char* expr);
-
 #ifdef __cplusplus
 }
 #endif
@@ -286,6 +294,12 @@ void dlg_default_handler_data(const struct dlg_origin* origin, const char* strin
 	dlg_default_handler(origin, string);
 }
 
+char** dlg_thread_buffer(unsigned int** size) {
+	struct dlg_data* data = dlg_data();
+	if(size) *size = &data->buffer_size;
+	return &data->buffer;
+}
+
 static dlg_handler g_handler = dlg_default_handler_data;
 static void* g_data = NULL;
 
@@ -293,6 +307,15 @@ void dlg_set_handler(dlg_handler handler, void* data) {
 	g_handler = handler;
 	g_data = data;
 }
+
+unsigned int dlg__push_tags(const char** tags) {
+	TODO
+}
+
+void dlg__pop_tags(unsigned int count); // pops the given number of tags.
+const char** dlg__get_tags(); // Returns the current tags buffer
+dlg_handler dlg__get_handler(); // Returns the global handler
+void* dlg__get_handler_data(); // Returns the global handler data
 
 void dlg_do_log(enum dlg_level lvl, const char* file, int line, const char* func,
 		char* string, const char* expr) {
@@ -337,13 +360,7 @@ void dlg_do_logt(enum dlg_level lvl, const char** tags, const char* file, int li
 		free(string);
 }
 
-char** dlg_thread_buffer(unsigned int** size) {
-	struct dlg_data* data = dlg_data();
-	if(size) *size = &data->buffer_size;
-	return &data->buffer;
-}
-
-char* dlg_printf_fmt(const char* str, ...) {
+char* dlg__printf_fmt(const char* str, ...) {
 	va_list vlist;
 	va_start(vlist, str);
 	va_list vlistcopy;
@@ -383,31 +400,29 @@ int main() {
 
 #endif
 
-// TODO: remove the dlg_tag macros?
-// probably not too nice in c...
+
+// TODO: not sure if it is a good idea to add them
 /*
-#define dlg_tag_base(global, tags, code) { \
-	const char* _dlg_tag_tags[] = {DLG_EVAL tags}; \
-	const char** _dlg_tag_ptr = _dlg_tag_tags;; \
-	const char* _dlg_tag_func = global ? NULL : __FUNCTION__; \
-	while(_dlg_tag_ptr)  \
-		dlg_add_tag(_dlg_tag_ptr++, _dlg_tag_func); \
-	code \
-	_dlg_tag_ptr = _dlg_tag_tags; \
-	while(_dlg_tag_ptr) \
-		 dlg_remove_tag(_dlg_tag_ptr++, _dlg_tag_func); \
-}
+	#define dlg_tag_base(global, tags, code) { \
+		const char* _dlg_tag_tags[] = {DLG_EVAL tags}; \
+		const char** _dlg_tag_ptr = _dlg_tag_tags;; \
+		const char* _dlg_tag_func = global ? NULL : __FUNCTION__; \
+		while(_dlg_tag_ptr)  \
+			dlg_add_tag(_dlg_tag_ptr++, _dlg_tag_func); \
+		code \
+		_dlg_tag_ptr = _dlg_tag_tags; \
+		while(_dlg_tag_ptr) \
+			 dlg_remove_tag(_dlg_tag_ptr++, _dlg_tag_func); \
+	}
+
+#if DLG_CHECK
+	#define dlg_check(code) { code }
+	#define dlg_checkt(tags, code) dlg_tag(tags, code)
+#else
+	#define dlg_check(code)
+	#define dlg_checkt(tags, code)
+#endif // DLG_CHECK
 
 #define dlg_tag(tags, code) dlg_tag_base(false, tags, code)
 #define dlg_tag_global(tags, code) dlg_tag_base(true, tags, code)
-*/
-
-/*
-// REMOVE!
-// the number of tags in DLG_DEFAULT_TAGS added to the maximum number of tags
-// given to a log/assert function must never exceed this value
-// just increase it if you need more tags. The compiler will output a warning/error
-// if this size is exceeded somewhere.
-// The number of parameters passed in dlg_tag can also not exceed this.
-#define DLG_TAGS_SIZE 20
 */

@@ -6,7 +6,7 @@
 // the translation unit they are defined in.
 // Central configuration macros:
 // - DLG_DEBUG (0 or 1), determines defaults for config below, defaulted to !NDEBUG
-// - DLG_CHECK (0 or 1), if defined, dlg_check scopes will be executed, defaulted to DLG_DEBUG
+// - DLG_CHECK (0 or 1), if 1, dlg_check scopes will be executed, defaulted to DLG_DEBUG
 // - DLG_LOG_LEVEL [0;6], the minimum log level
 //   - the lower it is the more logs will be evaluated
 //   - default: DLG_DEBUG ? trace : info
@@ -39,24 +39,16 @@
 //    'std::string func(std::string_view fmt, Args&&... args)'
 //    That will be used to format the string with the given arguments.
 //    Defaults to dlg::fmt, allowing typesafe formatting using '{}' (like fmtlib
-//    but 3000 fewer lines of code). Could e.g. be set to the real fmtlib function or 
+//    but 3000 fewer lines of code). Could e.g. be set to the real fmtlib function or
 //    a printf-wrapper, using '...' i.e. a va_list instead of 'Args&&...' works as well.
 //    Note that this function is (obviously) always and only called from a templated
 //    function so it does not have to be defined before the header is included.
 // TODO: DLG_FMT_FUNC should take a null-terminated string view for c functions
 
-#ifndef DLG_CONFIG_HPP
-#define DLG_CONFIG_HPP
+#ifndef DLG_CONFIG_H
+#define DLG_CONFIG_H
 
 #pragma once
-
-// Level definitions
-#define DLG_LEVEL_TRACE 1
-#define DLG_LEVEL_DEBUG 2
-#define DLG_LEVEL_INFO 3
-#define DLG_LEVEL_WARN 4
-#define DLG_LEVEL_ERROR 5
-#define DLG_LEVEL_CRITICAL 6
 
 // DLG_DEBUG
 #ifndef DLG_DEBUG
