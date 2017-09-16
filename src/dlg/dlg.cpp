@@ -38,6 +38,8 @@ std::u16string to_utf16(const std::string_view& utf8)
 {
 	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
 	return converter.from_bytes(&utf8.front(), &utf8.back() + 1);
+
+	dlg::output_handler();
 }
 
 bool check_ansi_support()
