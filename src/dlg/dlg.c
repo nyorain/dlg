@@ -220,7 +220,7 @@ struct dlg_data {
 	const char** tags; // vec
 	struct dlg_tag_func_pair* pairs; // vec
 	char* buffer;
-	unsigned int buffer_size;
+	size_t buffer_size;
 };
 
 struct dlg_data* dlg_data() {
@@ -245,7 +245,6 @@ void dlg_add_tag(const char* tag, const char* func) {
 	pair->func = func;
 }
 
-/// The given pointer must be exactly the same
 void dlg_remove_tag(const char* tag, const char* func) {
 	struct dlg_data* data = dlg_data();
 	for(unsigned int i = 0; i < vec_size(data->pairs); ++i) {
@@ -256,7 +255,7 @@ void dlg_remove_tag(const char* tag, const char* func) {
 	}
 }
 
-char** dlg_thread_buffer(unsigned int** size) {
+char** dlg_thread_buffer(size_t** size) {
 	struct dlg_data* data = dlg_data();
 	if(size) {
 		*size = &data->buffer_size;

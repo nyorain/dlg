@@ -131,7 +131,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// Might be used by every format function. The buffer might be resized and
 	// the size changed. Don't use this if you are not a format function that
 	// can only be called in expansion from a dlg macro.
-	inline char** dlg_thread_buffer(unsigned int** size) { return NULL; }
+	inline char** dlg_thread_buffer(size_t** size) {}
 
 #else // DLG_DISABLE
 	#define dlg_log(level, ...) if(level >= DLG_LOG_LEVEL) \
@@ -154,7 +154,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream);
 	void dlg_add_tag(const char* tag, const char* func);
 	void dlg_remove_tag(const char* tag, const char* func);
-	char** dlg_thread_buffer(unsigned int** size);
+	char** dlg_thread_buffer(size_t** size);
 
 	// - Private interface: not part of the api -
 	// Formats the given format string and arguments as printf would.

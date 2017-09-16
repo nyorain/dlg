@@ -7,7 +7,26 @@
 #include <sstream>
 #include <iostream>
 
-void tformat(std::string_view fmt, std::stringstream& output)
+#include <dlg/dlg.h>
+
+class StreamBuffer : public std::basic_streambuf<char> {
+public:
+	StreamBuffer(char*& buf, std::size_t& size) : buf_(buf), size_(size) {
+		setp(buf, buf + size); // we will only read from it
+	}
+
+	int_type overflow(int_type = traits_type::eof()) override {
+		buf_ = static_cast<char*>(std::realloc(buf_, size_ * 2 + 1));
+		size_ = buf_ ? size_ * 2 + 1 : 0;
+		return buf_ ? traits_type::eof() : 0;
+	}
+
+protected:
+	char*& buf_;
+	size_t& size_;
+};
+
+void tformat(std::string_view fmt, std::ostream& output)
 {
 	// check that no '{}' is left
 	bool pending = false;
@@ -26,7 +45,7 @@ void tformat(std::string_view fmt, std::stringstream& output)
 }
 
 template<typename Arg, typename... Args>
-void tformat(std::string_view fmt, std::stringstream& output, Arg&& arg, Args&&... args)
+void tformat(std::string_view fmt, std::ostream& output, Arg&& arg, Args&&... args)
 {
 	bool pending = false;
 	for(auto i = 0u; i < fmt.size(); ++i) {
@@ -54,13 +73,16 @@ void tformat(std::string_view fmt, std::stringstream& output, Arg&& arg, Args&&.
 /// Simply replaces '{}' with the arguments in order.
 /// Throws std::invalid_argument if the string does not match
 /// the arugment count. The arguments must implement the << operator
-/// for an ostream.
+/// for an ostream. The returned pointer must not be freed but it is
+/// only guaranteed to be valid until the next dlg logging/assertion call.
 template<typename... Args>
-std::string format(std::string_view fmt, Args&&... args)
+const char* format(std::string_view fmt, Args&&... args)
 {
-	std::stringstream output;
+	std::size_t* size;
+	StreamBuffer buf(*dlg_thread_buffer(&size), *size);
+	std::ostream output(&buf);
 	tformat(fmt, output, std::forward<Args>(args)...);
-	return output.str();
+	return *dlg_thread_buffer(nullptr);
 }
 
 /// printf-like format
