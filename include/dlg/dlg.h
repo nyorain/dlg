@@ -51,7 +51,7 @@ extern "C" {
 #endif
 
 // the function used for formatting. Can have any signature, but must be callable with
-// the arguments the log/assertions macros are called with. Must return a const char*
+// the arguments the log/assertions macros are called with. Must return a char*
 // that is either equal to *dlg_thread_buffer(NULL) or will be freed using free.
 // Usually a c function with ... (i.e. using va_list) or a variadic c++ template.
 #ifndef DLG_FMT_FUNC

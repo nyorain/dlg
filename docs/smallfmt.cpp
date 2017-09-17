@@ -16,6 +16,7 @@ public:
 	}
 
 	int_type overflow(int_type = traits_type::eof()) override {
+		 tODO: use argument, call setp
 		buf_ = static_cast<char*>(std::realloc(buf_, size_ * 2 + 1));
 		size_ = buf_ ? size_ * 2 + 1 : 0;
 		return buf_ ? traits_type::eof() : 0;

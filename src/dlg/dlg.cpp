@@ -55,7 +55,7 @@ bool check_ansi_support()
 
 	outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	errMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-	if (!SetConsoleMode(out, outMode) || !::SetConsoleMode(out, errMode))
+	if (!SetConsoleMode(out, outMode) || !::SetConsoleMode(err, errMode))
 		return false;
 
 	return true;

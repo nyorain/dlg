@@ -46,17 +46,18 @@ struct dlg_style {
 	enum dlg_color bg;
 };
 
+// Prints the given utf-8 format args to the given stream.
+// On windows it makes sure that if stream is stderr or stdout and a tty, 
+// the string will be correctly printed (even outside ascii range).
+// Works around stupid windows utf-16 bullshit basically. On unix
+// a correct locale has to be set, it's just calls printf.
+void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
 
-// Writes the given utf-8 string to the given stream.
-// On windows it makes sure that if stream
-// is stderr or stdout and a tty, the string will be correctly printed (even
-// outside ascii range) which fwrite does not.
-// Works around stupid windows bullshit basically.
-void dlg_output(FILE* stream, const char* string);
-
-// Like output, but also applies the given style to it.
-// Resets the style afterwards.
-void dlg_styled_output(FILE* stream, const char* string, const struct dlg_style style);
+// Like dlg_printf, but also applies the given style to this output.
+// The style will always be applied (using escape sequences), independent of the given stream.
+// On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
+void dlg_styled_fprintf(FILE* stream, const struct dlg_style style, 
+	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
 
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will
@@ -67,22 +68,9 @@ void dlg_escape_sequence(const struct dlg_style style, char buf[12]);
 // Returns the reset style escape sequence.
 const char* dlg_get_reset_sequence();
 
-// fprintf wrapper that allows to print utf8 on windows consoles.
-// If not on windows (or not printing to a console) simply evaluates to printf.
-#if defined(WIN32) || defined(_WIN32) || defined(_WIN64)
-	#define dlg_fprintf(stream, ...) \
-		if(dlg__win_get_console_handle(stream)) { \
-			dlg__win_output(stream, L DLG_FIRST(__VA_ARGS__), __VA_ARGS__); \
-		} else { \
-			fprintf(stream, __VA_ARGS__); \
-		}
-#else
-	#define dlg_fprintf(stream, ...) fprintf(stream, __VA_ARGS__);
-#endif
-
-#define DLG_FIRST(...) DLG_FIRST_HELPER(__VA_ARGS__, "DLG_FIRST_ERROR")
-#define DLG_FIRST_HELPER(first, ...) first
-
-// - Private interface not part of the api -
-void* dlg__win_get_console_handle(FILE* stream);
-void dlg__win_output(FILE* stream, wchar_t* format, char* oldformat, ...) DLG_PRINTF_ATTRIB(3, 4);
+// Just returns true on non-windows systems.
+// On windows tries to set the console mode to ansi to make escape sequences work.
+// This works only on newer windows 10 versions. Returns false on error.
+// Only the first call to it will have an effect, the function is also threadsafe.
+// Automatically called by the default output handler.
+bool dlg_win_init_ansi();

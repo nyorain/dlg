@@ -1,14 +1,26 @@
-#include "output.h"
-#include "dlg.h"
+#include <dlg/output.h>
+#include <dlg/dlg.h>
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+static void* xalloc(size_t size) {
+	void* ret = calloc(size, 1);
+	if(!ret) fprintf(stderr, "calloc returned NULL, things are going to burn");
+	return ret;
+}
+
+static void* xrealloc(void* ptr, size_t size) {
+	void* ret = realloc(ptr, size);
+	if(!ret) fprintf(stderr, "realloc returned NULL, things are going to burn");
+	return ret;
+}
 
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
-	#include <unistd.h>
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
@@ -21,7 +33,7 @@
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
 
-	static bool check_ansi_supported() {
+	static bool init_ansi_console() {
 		HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
 		HANDLE err = GetStdHandle(STD_OUTPUT_HANDLE);
 		if(out == INVALID_HANDLE_VALUE || err == INVALID_HANDLE_VALUE)
@@ -37,6 +49,23 @@
 			return false;
 
 		return true;
+	}
+	
+	void win_write_heap(void* handle, size_t needed, const char* format, va_list args) {
+		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
+		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
+		vsnprintf(buf1, needed + 1, format, args);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed + 1, buf2, needed + 1);
+		WriteConsoleW(handle, buf2, needed, NULL, NULL);
+		free(buf1);
+	}
+	
+	void win_write_stack(void* handle, size_t needed, const char* format, va_list args) {
+		char buf1[needed + 1];
+		wchar_t buf2[needed + 1];
+		vsnprintf(buf1, needed + 1, format, args);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed + 1, buf2, needed + 1);
+		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 	}
 
 #else
@@ -73,16 +102,39 @@ const char* dlg_get_reset_sequence() {
 	return reset_sequence;	
 }
 
-void dlg_output(FILE* stream, const char* string) {
-	dlg_fprintf(stream, "%s", string);
-}
+void dlg_fprintf(FILE* stream, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	
+#ifdef DLG_OS_WIN
+	void* handle = NULL;
+	if(stream == stdout) {
+		handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	} else if(stream == stderr) {
+		handle = GetStdHandle(STD_ERROR_HANDLE);
+	}
+	
+	if(handle) {
+		va_list args_copy;
+		va_copy(args_copy, args);
+		size_t needed = vsnprintf(NULL, 0, format, args_copy);
+		va_end(args_copy);
 
-void dlg_styled_output(FILE* stream, const char* string, const struct dlg_style style) {
-	char buf[12];
-	dlg_escape_sequence(style, buf);
-	fputs(buf, stream);
-	dlg_output(stream, string);
-	fputs(dlg_get_reset_sequence(), stream);
+		// we don't allocate more than 64kb on the stack
+		if(needed > 64 * 1024) {
+			win_write_heap(handle, needed, format, args);
+			va_end(args);
+			return;
+		} else {
+			win_write_stack(handle, needed, format, args);
+			va_end(args);
+			return;
+		}
+	}
+#endif
+
+	vfprintf(stream, format, args);
+	va_end(args);
 }
 
 // TODO: make this public accesible
@@ -95,74 +147,57 @@ static const struct dlg_style level_styles[] = {
 	{dlg_text_style_bold, dlg_color_red, dlg_color_none}
 };
 
-void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream) {
+void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
+	FILE* stream = (FILE*) data;
 	char buf[12];
 	if(!stream) {
 		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
+	
+	// TODO: we currently call this to make sure it is initialized...
+	dlg_win_init_ansi();
 
 	// XXX: we could add additional tones to the style.
 	// e.g. differentiate between assertion/log
 	dlg_escape_sequence(level_styles[origin->level], buf);
 	fputs(buf, stream);
+	
+	// time
+	time_t t = time(NULL);
+	struct tm *tm_info = localtime(&t);
+	char timebuf[32];
+	strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm_info);
 
+	// message
 	if(origin->expr && string) {
-		dlg_fprintf(stream, "[%s:%u] assertion '%s' failed: '%s'\n", origin->file, 
-			origin->line, origin->expr, string);
+		dlg_fprintf(stream, "[%s - %s:%u] assertion '%s' failed: '%s'", timebuf, 
+			origin->file, origin->line, origin->expr, string);
 	} else if(origin->expr) {
-		dlg_fprintf(stream, "[%s:%u] assertion '%s' failed\n", origin->file, 
-			origin->line, origin->expr);
+		dlg_fprintf(stream, "[%s - %s:%u] assertion '%s' failed", timebuf, 
+			origin->file, origin->line, origin->expr);
 	} else if(string) {
-		dlg_fprintf(stream, "[%s:%u] %s\n", origin->file, origin->line, string);
+		dlg_fprintf(stream, "[%s - %s:%u] %s", timebuf, origin->file, origin->line, string);
 	} else {
 		// this can probably not happen
-		dlg_fprintf(stream, "[%s:%u]\n", origin->file, origin->line);
+		dlg_fprintf(stream, "[%s - %s:%u]", timebuf, origin->file, origin->line);
 	}
 
 	fputs(dlg_get_reset_sequence(), stream);
-	fflush(stream);
+	fputs("\n", stream);
 }
 
-void* dlg__win_get_console_handle(FILE* stream) {
+bool dlg_win_init_ansi() {
 #ifdef DLG_OS_WIN
-	static bool ansi = check_ansi_supported();
-	if(ansi && stream == stdout) {
-		return GetStdHandle(STD_OUTPUT_HANDLE);
-	} else if(ansi && stream == stderr) {
-		return GetStdHandle(STD_ERROR_HANDLE);
+	static volatile LONG status = 0;
+	LONG res = InterlockedCompareExchange(&status, 1, 0);
+	if(res == 0) { // not initialized
+		InterlockedExchange(&status, 3 + init_ansi_console());
 	}
+	
+	while(status == 1); // currently initialized in another thread, spinlock
+	return (status == 4);
 #endif
-
-	((void) stream);
-	return NULL;
-}
-
-void dlg__win_output(FILE* stream, wchar_t* format, char* oldformat, ...) {
-#ifdef DLG_OS_WIN
-	_setmode(_fileno(stream), _O_U16TEXT);
-	va_list args;
-	va_start(args, oldformat);
-	vfwprintf(stream, format, args);
-	va_end(args);
-	fflush(stream);
-#else
-	((void) (oldformat));
-	((void) (format));
-	((void) (stream));
-	fprintf(stderr, "dlg error: dlg__output_win called but dlg was not compiled for windows");
-#endif
-}
-
-static void* xalloc(size_t size) {
-	void* ret = calloc(size, 1);
-	if(!ret) fprintf(stderr, "calloc returned NULL, things are going to burn");
-	return ret;
-}
-
-static void* xrealloc(void* ptr, size_t size) {
-	void* ret = realloc(ptr, size);
-	if(!ret) fprintf(stderr, "realloc returned NULL, things are going to burn");
-	return ret;
+	return true;
 }
 
 // small dynamic vec/array implementation
@@ -179,7 +214,7 @@ static void vec_do_erase(void* vec, unsigned int pos, unsigned int size) {
 	// TODO: can be more efficient if we are allowed to reorder vector
 	unsigned int* begin = vec__raw(vec);
 	begin[0] -= size;
-	char* buf = vec;
+	char* buf = (char*) vec;
 	memcpy(buf + pos, buf + pos + size, size);
 }
 
@@ -187,7 +222,7 @@ static void* vec_do_add(void* vec, unsigned int size) {
 	unsigned int* begin = vec__raw(vec);
 	unsigned int needed = begin[0] + size;
 	if(needed >= begin[1]) {
-		begin = xrealloc(vec, sizeof(unsigned int) * 2 + needed * 2);
+		begin = (unsigned int*) xrealloc(vec, sizeof(unsigned int) * 2 + needed * 2);
 		begin[1] = needed * 2;
 		vec = begin + 2;
 	}
@@ -308,7 +343,7 @@ char* dlg__printf_format(const char* str, ...) {
 	unsigned int needed = vsnprintf(NULL, 0, str, vlist);
 	va_end(vlist);
 
-	unsigned int* buf_size;
+	size_t* buf_size;
 	char** buf = dlg_thread_buffer(&buf_size);
 	if(*buf_size <= needed) {
 		*buf_size = (needed + 1) * 2;
@@ -382,7 +417,19 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 #define DLG_EVAL(...) __VA_ARGS__
 
 int main() {
-	// dlg_logt(dlg_level_trace, ("a", "b"), "test");
+	// int prev = _setmode(_fileno(stdout), 0x00020000); // _U_16TEXT
+	// wprintf(L"some unicode tääääxt %hs\n", "shclaer");
+	
+	// char buf1[512];
+	// snprintf(buf1, 512, u8"some unicode tääääxt %s\n", u8"shclöüäüßßßer");
+	
+	// wchar_t buf2[512];
+	// int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    // std::wstring wstrTo( size_needed, 0 );
+    // MultiByteToWideChar(CP_UTF8, 0, buf1, strlen(buf1), buf2, 512);
+	// WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE), buf2, wcslen(buf2), NULL, NULL);
+	
+	dlg_logt(dlg_level_trace, ("a", "b"), "test");
 	dlg_assertltm(dlg_level_trace,("taaag"), 1 == 2, "yoyoyo %d %s", 42, "64");
 	dlg_warn("ayy1%s", "oyy");
 	dlg_warnt(("tag"), "ayy2%s", "oyy");
