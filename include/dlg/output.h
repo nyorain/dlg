@@ -1,5 +1,16 @@
+// Copyright (c) 2017 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
+#ifndef _DLG_OUTPUT_H_
+#define _DLG_OUTPUT_H_
+
 #include "dlg.h"
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Text style
 enum dlg_text_style {
@@ -58,15 +69,35 @@ void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
 // On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
 void dlg_styled_fprintf(FILE* stream, const struct dlg_style style, 
 	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
+	
+// Features to output from the generic output handler
+enum dlg_output_feature {
+	dlg_output_tags = 1, // output tags list
+	dlg_output_time = 2, // output time of log call (hour:minute:second)
+	dlg_output_style = 4, // whether to use the supplied styles
+	dlg_output_func = 8, // output function
+	dlg_output_file_line = 16, // output file:line
+};
 
+// The default level-dependent output styles. The array values represent the styles
+// to be used for the associated level (i.e. [0] for trace level).
+extern const struct dlg_style dlg_default_output_styles[6];
+
+// Generic output function. Used by the default output handler and might be useful
+// for custom output handlers (that don't want to manually format the output).
+// If stream is NULL uses stdout for level < warn, stderr otherwise.
+void dlg_generic_output(FILE* stream, unsigned int features,
+	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_style styles[6]);
+	
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will
 // probably result in a buffer overflow or garbage being printed).
 // If all member of style are 'none' will simply nullterminate the first buf char.
 void dlg_escape_sequence(const struct dlg_style style, char buf[12]);
 
-// Returns the reset style escape sequence.
-const char* dlg_get_reset_sequence();
+// The reset style escape sequence.
+extern const char* dlg_reset_sequence;
 
 // Just returns true on non-windows systems.
 // On windows tries to set the console mode to ansi to make escape sequences work.
@@ -74,3 +105,9 @@ const char* dlg_get_reset_sequence();
 // Only the first call to it will have an effect, the function is also threadsafe.
 // Automatically called by the default output handler.
 bool dlg_win_init_ansi();
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif // header guard

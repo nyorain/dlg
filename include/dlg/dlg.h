@@ -12,6 +12,8 @@
 #include <stdio.h>
 
 #ifdef __cplusplus
+// NOTE: workaround, there might be a better solution, see DLG_CREATE_TAGS
+#include <initializer_list>
 extern "C" {
 #endif
 
@@ -45,10 +47,8 @@ extern "C" {
 #endif
 
 // default tags applied to all logs/assertions
-// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2" or NULL
-#ifndef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS NULL
-#endif
+// Must be in format ```#define DLG_DEFAULT_TAGS tag1", "tag2``` or just not defined
+// #define DLG_DEFAULT_TAGS
 
 // the function used for formatting. Can have any signature, but must be callable with
 // the arguments the log/assertions macros are called with. Must return a char*
@@ -59,7 +59,19 @@ extern "C" {
 #endif
 
 // utility
-#define DLG_CREATE_TAGS(...) (const char*[]) {__VA_ARGS__, DLG_DEFAULT_TAGS, NULL}
+#ifdef DLG_DEFAULT_TAGS
+	#define DLG_DEFAULT_TAGSN DLG_DEFAULT_TAGS, NULL
+#else
+	#define DLG_DEFAULT_TAGSN NULL
+#endif
+
+#ifdef __cplusplus
+	#define DLG_CREATE_TAGS(...) \
+		(std::initializer_list<const char*>{DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}).begin()
+#else
+	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}
+#endif
+
 #ifdef __GNUC__
 	#define DLG_PRINTF_ATTRIB(a, b) __attribute__ ((format (printf, a, b)))
 #else
@@ -107,11 +119,10 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// This function is not thread safe and the handler is set globally.
 	inline void dlg_set_handler(dlg_handler handler, void* data) {}
 
-	// The default output handling function.
-	// Prints to stdout for level < warn, stderr otherwise. Uses color for terminal streams
-	// and makes sure utf-8 is outputted correctly.
-	// Pass the FILE* you want to print to as stream (or NULL for stdout when origin.level < warn and
-	// stderr otherwise).
+	// The default output handler. Pass a valid FILE* as stream or NULL to use stderr/stdout.
+	// Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled, 
+	// the style feature enabled if the stream is a console (and if on windows ansi mode could
+	// be set) and dlg_default_output_styles as styles.
 	inline void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream) {}
 
 	// Adds the given tag associated with the given function to the thread specific list.
@@ -135,19 +146,21 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 
 #else // DLG_DISABLE
 	#define dlg_log(level, ...) if(level >= DLG_LOG_LEVEL) \
-		dlg__do_log(level, DLG_FILE, __LINE__, __func__, DLG_FMT_FUNC(__VA_ARGS__), NULL)
+		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__,  \
+		DLG_FMT_FUNC(__VA_ARGS__), NULL)
 	#define dlg_logt(level, tags, ...) if(level >= DLG_LOG_LEVEL) \
-		dlg__do_logt(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, \
+		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, \
 		DLG_FMT_FUNC(__VA_ARGS__), NULL)
 
 	#define dlg_assertl(level, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_log(level, DLG_FILE, __LINE__, __func__, NULL, #expr)
+		dlg__do_log(level, DLG_FILE, DLG_CREATE_TAGS(NULL), __LINE__, __func__, NULL, #expr)
 	#define dlg_assertlt(level, tags, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_logt(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, NULL, #expr)
+		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, NULL, #expr)
 	#define dlg_assertlm(level, expr, ...) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_log(level, DLG_FILE, __LINE__, __func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
+		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__,  \
+		DLG_FMT_FUNC(__VA_ARGS__), #expr)
 	#define dlg_assertltm(level, tags, expr, ...) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_logt(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
+		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
 	void dlg_set_handler(dlg_handler handler, void* data);
@@ -161,9 +174,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// The returned string is only guaranteed to be valid in the current logging call and
 	// must not be freed.
 	char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
-	void dlg__do_log(enum dlg_level lvl, const char* file, int line, const char* func,
-		char* string, const char* expr);
-	void dlg__do_logt(enum dlg_level lvl, const char** tags, const char* file, int line,
+	void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
 		const char* func, char* string, const char* expr);
 	const char* dlg__strip_root_path(const char* file, const char* base);
 

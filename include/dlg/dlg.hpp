@@ -12,20 +12,23 @@
 #include <dlg/dlg.h>
 #include <streambuf>
 #include <ostream>
+#include <functional>
 
 namespace dlg {
 
 class TagsGuard {
 public:
 	TagsGuard(const char** tags, const char* func) : tags_(tags), func_(func) {
-		while(tags++) {
+		while(*tags) {
 			dlg_add_tag(*tags, func);
+			++tags;
 		}
 	}
 
 	~TagsGuard() {
-		while(tags_++) {
+		while(*tags_) {
 			dlg_remove_tag(*tags_, func_);
+			++tags_;
 		}
 	}
 
@@ -39,10 +42,39 @@ protected:
 	#define dlg_tags_global()
 #else
 	#define dlg_tags(...) \
-		::dlg::TagsGuard _dlgltg_((const char* tags[]){__VA_ARGS__}, __func__)
+		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
+		::dlg::TagsGuard _dlgltg_(_dlgtags_, __func__) 
 	#define dlg_tags_global(...) \
-		::dlg::TagsGuard _dlggtg_((const char* tags[]){__VA_ARGS__}, nullptr)
+		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
+		::dlg::TagsGuard _dlggtg_(_dlgtags_.begin(), nullptr)
 #endif
+
+using Handler = std::function<void(const struct dlg_origin& origin, const char* str)>;
+
+namespace detail {
+	
+void handler_wrapper(const struct dlg_origin* origin, const char* str, void* data) {
+	auto& handler = *static_cast<Handler*>(data);
+	try {
+		handler(*origin, str);
+	} catch(const std::exception& err) {
+		fprintf(stderr, "dlg.hpp: handler has thrown exception: '%s'\n", err.what());
+	} catch(...) {
+		fprintf(stderr, "dlg.hpp: handler has thrown something else than std::exception");
+	}
+}
+	
+}
+
+// Allows to set a std::function as dlg handler.
+// The handler should not throw, all exceptions (and non-exceptions) are caught
+// in a wrapper since they must not be passed through dlg (since it's c and dlg
+// might be called from c code).
+void set_handler(Handler handler) {
+	static Handler handler_;
+	handler_ = std::move(handler);
+	dlg_set_handler(&detail::handler_wrapper, &handler_);
+}
 
 class StreamBuffer : public std::basic_streambuf<char> {
 public:
@@ -119,8 +151,9 @@ void tformat(std::string_view fmt, std::ostream& output, Arg&& arg, Args&&... ar
 template<typename... Args>
 char* format(std::string_view fmt, Args&&... args)
 {
-	std::size_t* size {};
-	StreamBuffer buf(*dlg_thread_buffer(&size), *size);
+	std::size_t* size;
+	char** dbuf = dlg_thread_buffer(&size);
+	StreamBuffer buf(*dbuf, *size);
 	std::ostream output(&buf);
 	tformat(fmt, output, std::forward<Args>(args)...);
 	return *dlg_thread_buffer(nullptr);

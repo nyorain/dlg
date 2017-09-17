@@ -6,6 +6,16 @@
 #include <string.h>
 #include <time.h>
 
+const char* dlg_reset_sequence = "\033[0m";
+const struct dlg_style dlg_default_output_styles[] = {
+	{dlg_text_style_italic, dlg_color_green, dlg_color_none},
+	{dlg_text_style_dim, dlg_color_gray, dlg_color_none},
+	{dlg_text_style_none, dlg_color_cyan, dlg_color_none},
+	{dlg_text_style_none, dlg_color_yellow, dlg_color_none},
+	{dlg_text_style_none, dlg_color_red, dlg_color_none},
+	{dlg_text_style_bold, dlg_color_red, dlg_color_none}
+};
+
 static void* xalloc(size_t size) {
 	void* ret = calloc(size, 1);
 	if(!ret) fprintf(stderr, "calloc returned NULL, things are going to burn");
@@ -21,6 +31,11 @@ static void* xrealloc(void* ptr, size_t size) {
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
+	#include <unistd.h>
+	
+	static bool is_tty(FILE* stream) {
+		return _isatty(_fileno(stream));
+	}
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
@@ -32,6 +47,10 @@ static void* xrealloc(void* ptr, size_t size) {
 	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
+	
+	static bool is_tty(FILE* stream) {
+		return isatty(fileno(stream));
+	}
 
 	static bool init_ansi_console() {
 		HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -51,20 +70,22 @@ static void* xrealloc(void* ptr, size_t size) {
 		return true;
 	}
 	
-	void win_write_heap(void* handle, size_t needed, const char* format, va_list args) {
+	// TODO: does WriteConsoleW even work for buffers larger than 64 KB??
+	// Maybe just don't support it?
+	static void win_write_heap(void* handle, size_t needed, const char* format, va_list args) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed + 1, buf2, needed + 1);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 		free(buf1);
 	}
 	
-	void win_write_stack(void* handle, size_t needed, const char* format, va_list args) {
+	static void win_write_stack(void* handle, size_t needed, const char* format, va_list args) {
 		char buf1[needed + 1];
 		wchar_t buf2[needed + 1];
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed + 1, buf2, needed + 1);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 	}
 
@@ -95,11 +116,6 @@ void dlg_escape_sequence(const struct dlg_style style, char buf[12]) {
 		case 3: snprintf(buf, 12, "\033[%d;%d;%dm", nums[0], nums[1], nums[2]); break;
 		default: buf[0] = '\0'; break;
 	}
-}
-
-const char* dlg_get_reset_sequence() {
-	static const char* reset_sequence = "\033[0m";
-	return reset_sequence;	
 }
 
 void dlg_fprintf(FILE* stream, const char* format, ...) {
@@ -137,53 +153,104 @@ void dlg_fprintf(FILE* stream, const char* format, ...) {
 	va_end(args);
 }
 
-// TODO: make this public accesible
-static const struct dlg_style level_styles[] = {
-	{dlg_text_style_italic, dlg_color_green, dlg_color_none},
-	{dlg_text_style_dim, dlg_color_gray, dlg_color_none},
-	{dlg_text_style_none, dlg_color_cyan, dlg_color_none},
-	{dlg_text_style_none, dlg_color_yellow, dlg_color_none},
-	{dlg_text_style_none, dlg_color_red, dlg_color_none},
-	{dlg_text_style_bold, dlg_color_red, dlg_color_none}
-};
+void dlg_generic_output(FILE* stream, unsigned int features,
+		const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6]) {
+	if(!stream) {
+		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
+	}
+		
+	if(features & dlg_output_style) {
+		char buf[12];
+		dlg_escape_sequence(styles[origin->level], buf);
+		fprintf(stream, "%s", buf);
+	}
+	
+	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
+		fprintf(stream, "[");
+	}
+	
+	bool first_meta = true;
+	if(features & dlg_output_time) {
+		time_t t = time(NULL);
+		struct tm *tm_info = localtime(&t);
+		char timebuf[32];
+		strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm_info);
+		fprintf(stream, "%s", timebuf);
+		first_meta = false;
+	}
+	
+	if(features & dlg_output_file_line) {
+		if(!first_meta) {
+			fprintf(stream, " ");
+		}
+		
+		// file names might conatin non-ascii chars
+		dlg_fprintf(stream, "%s:%u", origin->file, origin->line); 
+		first_meta = false;
+	}
+	
+	if(features & dlg_output_func) {
+		if(!first_meta) {
+			fprintf(stream, " ");
+		}
+		
+		// NOTE: use dlg_fprintf here? func names should really be ascii
+		// and can we otherwise be sure they are utf-8? probably not
+		fprintf(stream, "%s", origin->func);
+		first_meta = false;
+	}
+	
+	if(features & dlg_output_tags) {
+		if(!first_meta) {
+			fprintf(stream, " ");
+		}
+		
+		fprintf(stream, "{");
+		bool first_tag = true;
+		for(const char** tags = origin->tags; *tags; ++tags) {
+			if(!first_tag) {
+				fprintf(stream, ", ");
+			}
+			
+			fprintf(stream, "%s", *tags);
+			first_tag = false;
+		}
+		
+		fprintf(stream, "}");
+		first_meta = false;
+	}
+	
+	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
+		fprintf(stream, "] ");
+	}
+	
+	if(origin->expr && string) {
+		dlg_fprintf(stream, "assertion '%s' failed: '%s'", origin->expr, string);
+	} else if(origin->expr) {
+		dlg_fprintf(stream, "assertion '%s' failed", origin->expr);
+	} else if(string) {
+		dlg_fprintf(stream, "%s", string);
+	}
+	
+	if(features & dlg_output_style) {
+		fprintf(stream, "%s", dlg_reset_sequence);
+	}
+	
+	fprintf(stream, "\n");
+}
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
-	FILE* stream = (FILE*) data;
-	char buf[12];
+	FILE* stream = data;
 	if(!stream) {
 		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
 	
-	// TODO: we currently call this to make sure it is initialized...
-	dlg_win_init_ansi();
-
-	// XXX: we could add additional tones to the style.
-	// e.g. differentiate between assertion/log
-	dlg_escape_sequence(level_styles[origin->level], buf);
-	fputs(buf, stream);
-	
-	// time
-	time_t t = time(NULL);
-	struct tm *tm_info = localtime(&t);
-	char timebuf[32];
-	strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm_info);
-
-	// message
-	if(origin->expr && string) {
-		dlg_fprintf(stream, "[%s - %s:%u] assertion '%s' failed: '%s'", timebuf, 
-			origin->file, origin->line, origin->expr, string);
-	} else if(origin->expr) {
-		dlg_fprintf(stream, "[%s - %s:%u] assertion '%s' failed", timebuf, 
-			origin->file, origin->line, origin->expr);
-	} else if(string) {
-		dlg_fprintf(stream, "[%s - %s:%u] %s", timebuf, origin->file, origin->line, string);
-	} else {
-		// this can probably not happen
-		dlg_fprintf(stream, "[%s - %s:%u]", timebuf, origin->file, origin->line);
+	unsigned int features = dlg_output_file_line;
+	if(is_tty(stream) && dlg_win_init_ansi()) {
+		features |= dlg_output_style;
 	}
-
-	fputs(dlg_get_reset_sequence(), stream);
-	fputs("\n", stream);
+	dlg_generic_output(stream, features, origin, string, dlg_default_output_styles);
 }
 
 bool dlg_win_init_ansi() {
@@ -200,13 +267,15 @@ bool dlg_win_init_ansi() {
 	return true;
 }
 
+// TODO: use size_t instead of unsigned int?
 // small dynamic vec/array implementation
 #define vec__raw(vec) (((unsigned int*) vec) - 2)
 
-static void* vec_do_create(unsigned int size) {
-	unsigned int* begin = xalloc(2 * sizeof(unsigned int) + 2 * size);
-	begin[0] = size;
-	begin[1] = 2 * size;
+static void* vec_do_create(unsigned int typesize, unsigned int cap, unsigned int size) {
+	cap = (size > cap) ? size : cap;
+	unsigned int* begin = xalloc(2 * sizeof(unsigned int) + 2 * cap * typesize);
+	begin[0] = size * typesize;
+	begin[1] = cap * typesize;
 	return begin + 2;
 }
 
@@ -222,7 +291,7 @@ static void* vec_do_add(void* vec, unsigned int size) {
 	unsigned int* begin = vec__raw(vec);
 	unsigned int needed = begin[0] + size;
 	if(needed >= begin[1]) {
-		begin = (unsigned int*) xrealloc(vec, sizeof(unsigned int) * 2 + needed * 2);
+		begin = xrealloc(begin, sizeof(unsigned int) * 2 + needed * 2);
 		begin[1] = needed * 2;
 		vec = begin + 2;
 	}
@@ -232,8 +301,10 @@ static void* vec_do_add(void* vec, unsigned int size) {
 	return ptr;
 }
 
-#define vec_create(type, count) (type*) vec_do_create(count * sizeof(type))
-#define vec_init(array, count) array = vec_do_create(count * sizeof(*array))
+#define vec_create(type, size) (type*) vec_do_create(sizeof(type), size * 2, size)
+#define vec_create_reserve(type, size, capacity) (type*) vec_do_create(sizeof(type), capcity, size)
+#define vec_init(array, size) array = vec_do_create(sizeof(*array), size * 2, size)
+#define vec_init_reserve(array, size, capacity) array = vec_do_create(sizeof(*array), capacity, size)
 #define vec_free(vec) free(vec__raw(vec))
 #define vec_erase_range(vec, pos, count) vec_do_erase(vec, pos * sizeof(*vec), count * sizeof(*vec))
 #define vec_erase(vec, pos) vec_do_erase(vec, pos * sizeof(*vec), sizeof(*vec))
@@ -258,14 +329,14 @@ struct dlg_data {
 	size_t buffer_size;
 };
 
-struct dlg_data* dlg_data() {
+static struct dlg_data* dlg_data() {
 	// NOTE: maybe don't hardcode _Thead_local, depending on build config?
 	// or make it possible to use another keyword (for older/non-c11 compilers)
-	static _Thread_local struct dlg_data* data;
+	static _Thread_local struct dlg_data* data = NULL;
 	if(!data) {
 		data = xalloc(sizeof(struct dlg_data));
-		vec_init(data->tags, 20);
-		vec_init(data->pairs, 20);
+		vec_init_reserve(data->tags, 0, 20);
+		vec_init_reserve(data->pairs, 0, 20);
 		data->buffer_size = 100;
 		data->buffer = xalloc(100);
 	}
@@ -306,34 +377,6 @@ void dlg_set_handler(dlg_handler handler, void* data) {
 	g_data = data;
 }
 
-unsigned int dlg__push_tags(const char** tags) {
-	struct dlg_data* data = dlg_data();
-
-	// TODO: vec utility for this?
-	// like vec_insert that takes a null-terminated array or sth.
-	// then also add vec_insert_vec (that takes another vec) or vec_cat
-	unsigned int tag_count = 0;
-	while(tags[tag_count])
-		vec_push(data->tags, tags[tag_count++]);
-	return tag_count;
-}
-
-void dlg__pop_tags(unsigned int count) {
-	vec_popc(dlg_data()->tags, count);
-}
-
-const char** dlg__get_tags() {
-	return dlg_data()->tags;
-}
-
-dlg_handler dlg__get_handler() {
-	return g_handler;
-}
-
-void* dlg__get_handler_data() {
-	return g_data;	
-}
-
 char* dlg__printf_format(const char* str, ...) {
 	va_list vlist;
 	va_start(vlist, str);
@@ -356,9 +399,29 @@ char* dlg__printf_format(const char* str, ...) {
 	return *buf;
 }
 
-void dlg__do_log(enum dlg_level lvl, const char* file, int line, const char* func,
-		char* string, const char* expr) {
+void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
+		const char* func, char* string, const char* expr) {
 	struct dlg_data* data = dlg_data();
+	unsigned int tag_count = 0; 
+	
+	// push default tags
+	while(tags[tag_count]) { 
+		vec_push(data->tags, tags[tag_count++]);
+	}
+	
+	// push current global tags
+	unsigned int global_tag_count = 0;
+	while(global_tag_count < vec_size(data->pairs)) {
+		vec_push(data->tags, data->pairs[global_tag_count++].tag);
+	}
+	
+	// push call-specific tags, skip first terminating NULL
+	++tag_count;
+	while(tags[tag_count]) {
+		vec_push(data->tags, tags[tag_count++]);
+	}
+
+	vec_push(data->tags, NULL); // terminating NULL
 	struct dlg_origin origin = {
 		.level = lvl,
 		.file = file,
@@ -369,23 +432,10 @@ void dlg__do_log(enum dlg_level lvl, const char* file, int line, const char* fun
 	};
 
 	g_handler(&origin, string, g_data);
-	if(string != dlg_data()->buffer)
+	vec_popc(data->tags, tag_count + global_tag_count); // tag_count contains the terminating NULL
+	if(string != dlg_data()->buffer) {
 		free(string);
-}
-
-void dlg__do_logt(enum dlg_level lvl, const char** tags, const char* file, int line,
-		const char* func, char* string, const char* expr) {
-	struct dlg_data* data = dlg_data();
-
-	// TODO: vec utility for this?
-	// like vec_insert that takes a null-terminated array or sth.
-	// then also add vec_insert_vec (that takes another vec) or vec_cat
-	unsigned int tag_count = 0;
-	while(tags[tag_count])
-		vec_push(data->tags, tags[tag_count++]);
-
-	dlg__do_log(lvl, file, line, func, string, expr);
-	vec_popc(data->tags, tag_count);
+	}
 }
 
 const char* dlg__strip_root_path(const char* file, const char* base) {
@@ -411,37 +461,6 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 	}
 
 	return file;
-}
-
-// TODO
-#define DLG_EVAL(...) __VA_ARGS__
-
-int main() {
-	// int prev = _setmode(_fileno(stdout), 0x00020000); // _U_16TEXT
-	// wprintf(L"some unicode tääääxt %hs\n", "shclaer");
-	
-	// char buf1[512];
-	// snprintf(buf1, 512, u8"some unicode tääääxt %s\n", u8"shclöüäüßßßer");
-	
-	// wchar_t buf2[512];
-	// int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
-    // std::wstring wstrTo( size_needed, 0 );
-    // MultiByteToWideChar(CP_UTF8, 0, buf1, strlen(buf1), buf2, 512);
-	// WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE), buf2, wcslen(buf2), NULL, NULL);
-	
-	dlg_logt(dlg_level_trace, ("a", "b"), "test");
-	dlg_assertltm(dlg_level_trace,("taaag"), 1 == 2, "yoyoyo %d %s", 42, "64");
-	dlg_warn("ayy1%s", "oyy");
-	dlg_warnt(("tag"), "ayy2%s", "oyy");
-
-	// #define DLG_MM_HELPER(...) __VA_ARGS__
-	// #define DLG_ADD_TAGS(tags, ...) (DLG_MM_HELPER tags, __VA_ARGS__)
-	// #define ny_warnt(tags, ...) dlg_warnt(DLG_ADD_TAGS(tags, "ny"), __VA_ARGS__)
-	// #define ny_warn(...) dlg_warnt(("ny"), __VA_ARGS__)
-	// ny_warnt(("a", "b"), "test1");
-	// ny_warn("test2");
-
-	return 0;
 }
 
 // TODO: not sure if it is a good idea to add them

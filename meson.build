@@ -1,6 +1,6 @@
-project('dlg', 'cpp',
+project('dlg', ['c', 'cpp'],
 	version: '0.1.0',
-	default_options: 'cpp_std=c++1z')
+	default_options: ['c_std=c11', 'cpp_std=c++1z'])
 
 build_library = get_option('library')
 build_sample = get_option('sample')
@@ -18,20 +18,19 @@ add_project_arguments(
 	language: 'cpp')
 
 headers = files([
-	'include/dlg/output.hpp',
-	'include/dlg/config.hpp',
-	'include/dlg/dlg.hpp',
-	'include/dlg/fmt.hpp'
+	'include/dlg/output.h',
+	'include/dlg/dlg.h',
+	'include/dlg/dlg.hpp'
 ])
 
 # build library
 if build_library
 	dlg_lib = library('dlg',
-		'src/dlg/dlg.cpp',
+		'src/dlg/dlg.c',
 		include_directories: inc)
 	libs = [dlg_lib]
 else
-	sources = ['src/dlg/dlg.cpp']
+	sources = ['src/dlg/dlg.c']
 endif
 
 # dependency
