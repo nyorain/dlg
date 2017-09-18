@@ -12,6 +12,7 @@ amount to convince you here, pretty hard to write much bullshit besides a
 well-documented logging interface in a few hundred lines*):
 
 There are 3 headers:
+
 	- <dlg/dlg.h> (around 200 loc): Everything you need, no dependencies
 	- <dlg/output.h> (around 100 loc): Utilities for implementing custom output handlers
 	- <dlg/dlg.hpp> (around 200 loc): Modern C++11 utilities, alternative formatter
