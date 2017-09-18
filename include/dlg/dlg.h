@@ -11,9 +11,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+// Hosted at https://github.com/nyorain/dlg.
+// There are examples and documentation. 
+// Issue reports and contributions appreciated.
+
 #ifdef __cplusplus
-// NOTE: workaround, there might be a better solution, see DLG_CREATE_TAGS
-#include <initializer_list>
 extern "C" {
 #endif
 
@@ -50,7 +52,7 @@ extern "C" {
 // Must be in format ```#define DLG_DEFAULT_TAGS tag1", "tag2``` or just not defined
 // #define DLG_DEFAULT_TAGS
 
-// the function used for formatting. Can have any signature, but must be callable with
+// The function used for formatting. Can have any signature, but must be callable with
 // the arguments the log/assertions macros are called with. Must return a char*
 // that is either equal to *dlg_thread_buffer(NULL) or will be freed using free.
 // Usually a c function with ... (i.e. using va_list) or a variadic c++ template.
@@ -58,16 +60,18 @@ extern "C" {
 	#define DLG_FMT_FUNC dlg__printf_format
 #endif
 
-// utility
+// - utility -
 #ifdef DLG_DEFAULT_TAGS
 	#define DLG_DEFAULT_TAGSN DLG_DEFAULT_TAGS, NULL
 #else
 	#define DLG_DEFAULT_TAGSN NULL
 #endif
 
+// two methods needed since cplusplus does not support compound literals
+// and c does not support uniform initialization
 #ifdef __cplusplus
-	#define DLG_CREATE_TAGS(...) \
-		(std::initializer_list<const char*>{DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}).begin()
+	typedef const char* const DLG_STRL_[];
+	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}
 #else
 	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}
 #endif
@@ -78,6 +82,7 @@ extern "C" {
 	#define DLG_PRINTF_ATTRIB(a, b)
 #endif
 
+// Represents the importance of a log/assertion call.
 enum dlg_level {
 	dlg_level_trace = 0, // temporary used debug, e.g. to check if control reaches function
 	dlg_level_debug, // general debugging, prints e.g. all major events
@@ -87,6 +92,8 @@ enum dlg_level {
 	dlg_level_fatal // critical error; application is likely to crash/exit
 };
 
+// Holds various information associated with a log/assertion call.
+// Forwarded to the output handler.
 struct dlg_origin {
 	const char* file;
 	unsigned int line;
@@ -96,7 +103,7 @@ struct dlg_origin {
 	const char* expr; // assertion expression, otherwise null
 };
 
-// See dlg_set_handler.
+// Type of the output handler, see dlg_set_handler.
 typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, void* data);
 
 #ifdef DLG_DISABLE
@@ -112,17 +119,16 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	#define dlg_assertltm(level, tags, expr, ...) // assert with tags & message
 
 	// Sets the handler that is responsible for formatting and outputting log calls.
+	// This function is not thread safe and the handler is set globally.
+	// The handler must not change dlg tags or call a dlg macro theirself.
 	// Can also be used various other things such as dealing with critical failed
 	// assertions or filtering calls based on the passed tags.
 	// The default handler is dlg_default_output (see its doc for more info).
-	// The handler must not change dlg tags or call a dlg macro theirself.
-	// This function is not thread safe and the handler is set globally.
 	inline void dlg_set_handler(dlg_handler handler, void* data) {}
 
-	// The default output handler. Pass a valid FILE* as stream or NULL to use stderr/stdout.
-	// Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled, 
-	// the style feature enabled if the stream is a console (and if on windows ansi mode could
-	// be set) and dlg_default_output_styles as styles.
+	// The default output handler.
+	// Only use this to reset the output handler, prefer to use 
+	// dlg_generic_output (from output.h) which this function simply calls.
 	// It also flushes the stream used.
 	inline void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream) {}
 
@@ -139,10 +145,10 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// undefined which.
 	inline void dlg_remove_tag(const char* tag, const char* func) {}
 
-	// Returns the thread buffer for dlg formatting functions.
-	// Might be used by every format function. The buffer might be resized and
-	// the size changed. Don't use this if you are not a format function that
-	// can only be called in expansion from a dlg macro.
+	// Returns the thread-specific buffer and its size for dlg.
+	// The buffer should only be used by formatting functions.
+	// The buffer can be reallocated and the size changed, just make sure
+	// to update both values correctly.
 	inline char** dlg_thread_buffer(size_t** size) {}
 
 #else // DLG_DISABLE
@@ -170,10 +176,8 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	void dlg_remove_tag(const char* tag, const char* func);
 	char** dlg_thread_buffer(size_t** size);
 
-	// - Private interface: not part of the api -
-	// Formats the given format string and arguments as printf would.
-	// The returned string is only guaranteed to be valid in the current logging call and
-	// must not be freed.
+	// - Private interface: not part of the abi/api but needed in macros -
+	// Formats the given format string and arguments as printf would, uses the thread buffer.
 	char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
 	void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
 		const char* func, char* string, const char* expr);
@@ -197,7 +201,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 #define dlg_errort(tags, ...) dlg_logt(dlg_level_error, tags, __VA_ARGS__)
 #define dlg_datal(tags, ...) dlg_logt(dlg_level_fatal, tags, __VA_ARGS__)
 
-// Assert macros useing DLG_DEFAULT_ASSERT as level (defaulted to error)
+// Assert macros useing DLG_DEFAULT_ASSERT as level
 #define dlg_assert(expr) dlg_assertl(DLG_DEFAULT_ASSERT, expr)
 #define dlg_assertt(tags, expr) dlg_assertlt(DLG_DEFAULT_ASSERT, tags, expr)
 #define dlg_assertm(expr, ...) dlg_assertlm(DLG_DEFAULT_ASSERT, expr, __VA_ARGS__)

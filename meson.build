@@ -1,6 +1,6 @@
 project('dlg', ['c', 'cpp'],
 	version: '0.1.0',
-	default_options: ['c_std=c11', 'cpp_std=c++1z'])
+	default_options: ['c_std=c11', 'cpp_std=c++11'])
 
 build_library = get_option('library')
 build_sample = get_option('sample')

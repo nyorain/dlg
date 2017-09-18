@@ -413,8 +413,13 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	
 	// push current global tags
 	unsigned int global_tag_count = 0;
-	while(global_tag_count < vec_size(data->pairs)) {
-		vec_push(data->tags, data->pairs[global_tag_count++].tag);
+	for(size_t i = 0; i < vec_size(data->pairs); ++i) {
+		// TODO: really use strcmp here? does == not work?
+		const struct dlg_tag_func_pair pair = data->pairs[i];
+		if(pair.func == NULL || !strcmp(pair.func, func)) {
+			vec_push(data->tags, pair.tag);
+			++global_tag_count;
+		}
 	}
 	
 	// push call-specific tags, skip first terminating NULL

@@ -1,33 +1,37 @@
-sudo: false
+sudo: required
+
 language: cpp
-group: beta
 
 notifications:
   email: false
 
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-      compiler: gcc
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-7', 'valgrind']
-      env:
-        - COMPILER=g++-7
+compiler:
+  - gcc
+  - clang
 
-install:
-  - export PATH="`pwd`/build:${PATH}"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-linux.zip && unzip -q ninja-linux.zip -d build; fi
-  - pip install meson
+arch:
+  packages:
+    - meson
+    - ninja
+    - wayland
+    - wayland-protocols
+    - vulkan-icd-loader
+    - vulkan-headers
+    - mesa
+    - libxcb
+    - libxcursor
+    - xcb-util
+    - xcb-util-wm
+    - xcb-util-cursor
+    - xcb-util-image
+    - libx11
+    - libxkbcommon
+    - libxkbcommon-x11
+  script:
+    - meson build -Dtests=true
+    - cd build
+    - meson test --wrapper valgrind
+    - "cat meson-logs/testlog-valgrind.txt | : "
 
 script:
-  - export CC=gcc-7
-  - export CXX=g++-7
-  - meson build -Dtests=true -Dsample=true
-  - cd build
-  - ninja
-  - ./sample
-  - meson test --wrapper valgrind
-  - "cat meson-logs/testlog-valgrind.txt | : "
+  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"

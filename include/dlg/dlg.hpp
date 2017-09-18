@@ -5,6 +5,7 @@
 #ifndef _DLG_DLG_HPP_
 #define _DLG_DLG_HPP_
 
+// TODO: document
 #ifndef DLG_FMT_FUNC
 	#define DLG_FMT_FUNC ::dlg::format
 #endif
@@ -13,6 +14,8 @@
 #include <streambuf>
 #include <ostream>
 #include <functional>
+
+// TODO: document (here and in summary)
 
 namespace dlg {
 
@@ -38,8 +41,8 @@ protected:
 };
 
 #ifdef DLG_DISABLE
-	#define dlg_tags() 
-	#define dlg_tags_global()
+	#define dlg_tags(...) 
+	#define dlg_tags_global(...)
 #else
 	#define dlg_tags(...) \
 		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
@@ -156,6 +159,7 @@ char* format(std::string_view fmt, Args&&... args)
 	StreamBuffer buf(*dbuf, *size);
 	std::ostream output(&buf);
 	tformat(fmt, output, std::forward<Args>(args)...);
+	output.put('\0'); // terminating null char since we will use the buffer as string
 	return *dlg_thread_buffer(nullptr);
 }
 

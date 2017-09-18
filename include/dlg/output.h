@@ -5,7 +5,7 @@
 #ifndef _DLG_OUTPUT_H_
 #define _DLG_OUTPUT_H_
 
-#include "dlg.h"
+#include <dlg/dlg.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -57,11 +57,7 @@ struct dlg_style {
 	enum dlg_color bg;
 };
 
-// Prints the given utf-8 format args to the given stream.
-// On windows it makes sure that if stream is stderr or stdout and a tty, 
-// the string will be correctly printed (even outside ascii range).
-// Works around stupid windows utf-16 bullshit basically. On unix
-// a correct locale has to be set, it's just calls printf.
+// Like fprintf but fixes utf-8 output to console on windows.
 void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
 
 // Like dlg_printf, but also applies the given style to this output.
