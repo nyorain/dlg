@@ -17,6 +17,7 @@ arch:
   script:
     - meson build -Dtests=true
     - cd build
+    - ninja
     - meson test --wrapper valgrind
     - "cat meson-logs/testlog-valgrind.txt | : "
 
