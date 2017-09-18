@@ -13,20 +13,7 @@ arch:
   packages:
     - meson
     - ninja
-    - wayland
-    - wayland-protocols
-    - vulkan-icd-loader
-    - vulkan-headers
-    - mesa
-    - libxcb
-    - libxcursor
-    - xcb-util
-    - xcb-util-wm
-    - xcb-util-cursor
-    - xcb-util-image
-    - libx11
-    - libxkbcommon
-    - libxkbcommon-x11
+    - valgrind
   script:
     - meson build -Dtests=true
     - cd build
