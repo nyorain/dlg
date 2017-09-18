@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE
 #include <dlg/output.h>
 #include <dlg/dlg.h>
 #include <wchar.h>
@@ -33,8 +34,8 @@ static void* xrealloc(void* ptr, size_t size) {
 	#define DLG_OS_UNIX
 	#include <unistd.h>
 	
-	static bool is_tty(FILE* stream) {
-		return _isatty(_fileno(stream));
+	bool dlg_is_tty(FILE* stream) {
+		return isatty(fileno(stream));
 	}
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
@@ -48,8 +49,8 @@ static void* xrealloc(void* ptr, size_t size) {
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
 	
-	static bool is_tty(FILE* stream) {
-		return isatty(fileno(stream));
+	bool dlg_is_tty(FILE* stream) {
+		return _isatty(_fileno(stream));
 	}
 
 	static bool init_ansi_console() {
@@ -218,7 +219,6 @@ void dlg_generic_output(FILE* stream, unsigned int features,
 		}
 		
 		fprintf(stream, "}");
-		first_meta = false;
 	}
 	
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
@@ -247,10 +247,12 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 	}
 	
 	unsigned int features = dlg_output_file_line;
-	if(is_tty(stream) && dlg_win_init_ansi()) {
+	if(dlg_is_tty(stream) && dlg_win_init_ansi()) {
 		features |= dlg_output_style;
 	}
+
 	dlg_generic_output(stream, features, origin, string, dlg_default_output_styles);
+	fflush(stream);
 }
 
 bool dlg_win_init_ansi() {

@@ -89,6 +89,10 @@ extern const struct dlg_style dlg_default_output_styles[6];
 void dlg_generic_output(FILE* stream, unsigned int features,
 	const struct dlg_origin* origin, const char* string, 
 	const struct dlg_style styles[6]);
+
+// Returns if the given stream is a tty. Useful for custom output handlers
+// e.g. to determine whether to use color.
+bool dlg_is_tty(FILE* stream);
 	
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will

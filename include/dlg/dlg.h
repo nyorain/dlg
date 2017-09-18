@@ -123,6 +123,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled, 
 	// the style feature enabled if the stream is a console (and if on windows ansi mode could
 	// be set) and dlg_default_output_styles as styles.
+	// It also flushes the stream used.
 	inline void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream) {}
 
 	// Adds the given tag associated with the given function to the thread specific list.

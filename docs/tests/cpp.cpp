@@ -17,6 +17,8 @@ int main() {
 	}
 	
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {}", "sick", 69);
+	dlg_assertm(2 == NULL + 2, "eeeehhh... {}", "wtf");
+	dlg_assertm(1 == 2, "should fire... {} {}", "!", 24);
 }
 
 #define DLG_ADD_TAGS(tags, ...) (DLG_MM_HELPER tags, __VA_ARGS__)
