@@ -1,5 +1,6 @@
 tests = [
-  ['cpp', 'cpp.cpp']
+  ['core', 'core.c'],
+  ['cpp', 'cpp.cpp'],
 ]
 
 foreach test : tests

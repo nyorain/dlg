@@ -114,7 +114,7 @@ void gformat(std::ostream& os, const char* replace, const char* fmt);
 
 /// Simply calls gformat with a local stringstream and returns the stringstreams
 /// contents.
-template<typename Arg, typename... Args>
+template<typename... Args>
 std::string rformat(const char* replace, const char* fmt, Args&&... args) {
 	std::stringstream sstream;
 	gformat(sstream, replace, fmt, std::forward<Args>(args)...);

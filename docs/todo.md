@@ -12,6 +12,12 @@
 - [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
 	- [ ] Also custom assertion handler? that is called inline and might throw?
 - [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
+- [ ] c example
+- [ ] extend c testing (mainly tag setting scope)
+- [ ] fix c++ example
+- [ ] release version 0.2.0
+- [ ] get stable (or make a list of what to do for 1.0)
+- [ ] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
 

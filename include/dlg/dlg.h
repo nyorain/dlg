@@ -48,9 +48,12 @@ extern "C" {
 	#endif
 #endif
 
-// default tags applied to all logs/assertions
-// Must be in format ```#define DLG_DEFAULT_TAGS tag1", "tag2``` or just not defined
-// #define DLG_DEFAULT_TAGS
+// Default tags applied to all logs/assertions (in the defining file).
+// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2", NULL``` (with the last NULL!),
+// or just NULL (or not defined in which case they are defaulted to just NULL)
+#ifndef DLG_DEFAULT_TAGS
+	#define DLG_DEFAULT_TAGS NULL
+#endif
 
 // The function used for formatting. Can have any signature, but must be callable with
 // the arguments the log/assertions macros are called with. Must return a const char*
@@ -64,19 +67,13 @@ extern "C" {
 #endif
 
 // - utility -
-#ifdef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGSN DLG_DEFAULT_TAGS, NULL
-#else
-	#define DLG_DEFAULT_TAGSN NULL
-#endif
-
 // two methods needed since cplusplus does not support compound literals
 // and c does not support uniform initialization
 #ifdef __cplusplus
 	typedef const char* const DLG_STRL_[];
-	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGS, __VA_ARGS__, NULL}
 #else
-	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGSN, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGS, __VA_ARGS__, NULL}
 #endif
 
 #ifdef __GNUC__
@@ -147,8 +144,8 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// The pointers must be exactly the same pointers that were supplied to dlg_add_tag,
 	// this function will not check using strcmp. When the same tag/func combination
 	// is added multiple times, this function remove exactly one candidate, it is
-	// undefined which.
-	inline void dlg_remove_tag(const char* tag, const char* func) {}
+	// undefined which. Returns whether a tag was found (and removed).
+	inline bool dlg_remove_tag(const char* tag, const char* func) { return true; }
 
 	// Returns the thread-specific buffer and its size for dlg.
 	// The buffer should only be used by formatting functions.
@@ -171,7 +168,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		DLG_FMT_FUNC(__VA_ARGS__), NULL)
 
 	#define dlg_assertl(level, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_log(level, DLG_FILE, DLG_CREATE_TAGS(NULL), __LINE__, __func__, NULL, #expr)
+		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__, NULL, #expr)
 	#define dlg_assertlt(level, tags, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, NULL, #expr)
 	#define dlg_assertlm(level, expr, ...) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
@@ -184,7 +181,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	void dlg_set_handler(dlg_handler handler, void* data);
 	void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream);
 	void dlg_add_tag(const char* tag, const char* func);
-	void dlg_remove_tag(const char* tag, const char* func);
+	bool dlg_remove_tag(const char* tag, const char* func);
 	char** dlg_thread_buffer(size_t** size);
 	void dlg_cleanup();
 

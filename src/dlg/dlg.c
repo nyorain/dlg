@@ -95,7 +95,7 @@ static void* xrealloc(void* ptr, size_t size) {
 #endif
 
 // general
-void dlg_escape_sequence(const struct dlg_style style, char buf[12]) {
+void dlg_escape_sequence(struct dlg_style style, char buf[12]) {
 	int nums[3];
 	unsigned int count = 0;
 
@@ -152,6 +152,18 @@ void dlg_fprintf(FILE* stream, const char* format, ...) {
 
 	vfprintf(stream, format, args);
 	va_end(args);
+}
+
+void dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format, ...) {
+	char buf[12];
+	dlg_escape_sequence(style, buf);
+
+	fprintf(stream, "%s", buf);
+	va_list args;
+	va_start(args, format);
+	vfprintf(stream, format, args);
+	va_end(args);
+	fprintf(stream, "%s", dlg_reset_sequence);
 }
 
 void dlg_generic_output(FILE* stream, unsigned int features,
@@ -317,6 +329,7 @@ static void* vec_do_add(void* vec, unsigned int size) {
 #define vec_push(vec, value) (vec_do_add(vec, sizeof(*vec)), vec_last(vec) = (value))
 #define vec_pop(vec) (vec__raw(vec)[0] -= sizeof(*vec))
 #define vec_popc(vec, count) (vec__raw(vec)[0] -= sizeof(*vec) * count)
+#define vec_clear(vec) (vec__raw(vec)[0] = 0)
 #define vec_last(vec) (vec[vec_size(vec) - 1])
 
 struct dlg_tag_func_pair {
@@ -358,14 +371,16 @@ void dlg_add_tag(const char* tag, const char* func) {
 	pair->func = func;
 }
 
-void dlg_remove_tag(const char* tag, const char* func) {
+bool dlg_remove_tag(const char* tag, const char* func) {
 	struct dlg_data* data = dlg_data();
 	for(unsigned int i = 0; i < vec_size(data->pairs); ++i) {
 		if(data->pairs[i].func == func && data->pairs[i].tag == tag) {
 			vec_erase(data->pairs, i);
-			return;
+			return true;
 		}
 	}
+
+	return false;
 }
 
 char** dlg_thread_buffer(size_t** size) {
@@ -391,6 +406,7 @@ void dlg_cleanup() {
 		vec_free((*data)->tags);
 		free((*data)->buffer);
 		free(*data);
+		*data = NULL;
 	}
 }
 
@@ -427,13 +443,11 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	}
 	
 	// push current global tags
-	unsigned int global_tag_count = 0;
 	for(size_t i = 0; i < vec_size(data->pairs); ++i) {
 		// TODO: really use strcmp here? does == not work?
 		const struct dlg_tag_func_pair pair = data->pairs[i];
 		if(pair.func == NULL || !strcmp(pair.func, func)) {
 			vec_push(data->tags, pair.tag);
-			++global_tag_count;
 		}
 	}
 	
@@ -454,7 +468,7 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	};
 
 	g_handler(&origin, string, g_data);
-	vec_popc(data->tags, tag_count + global_tag_count); // tag_count contains the terminating NULL
+	vec_clear(data->tags);
 }
 
 const char* dlg__strip_root_path(const char* file, const char* base) {

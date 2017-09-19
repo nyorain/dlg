@@ -1,12 +1,10 @@
-
 // this is the probably most important config macro (for more see config.hpp):
 // if this is defined all dlg macros will do nothing (literally nothing, they
 // will produce a single instruction).
 // #define DLG_DISABLE
 
 #include <dlg/dlg.hpp> // dlg macros and basic stuff
-#include <dlg/output.hpp> // needed for custom output handler set later
-using namespace dlg::literals; // for the _tag string literal operator
+#include <dlg/output.h> // needed for custom output handler set later
 
 #include <iostream> // since we manually use std::cout
 #include <fstream> // since we might write to a file later on
@@ -15,8 +13,8 @@ int main()
 {
 	// dlg offers assert and log calls mainly
 	// asserts work with or without message
-	dlg_assert(1 == 1, "This message should never be seen");
-	dlg_assert(1 == 1);
+	dlg_assertm(true, "This message should never be seen");
+	dlg_assert(true);
 
 	// there are various log levels
 	dlg_trace("A trace log");
@@ -24,18 +22,20 @@ int main()
 	dlg_debug("A debug log");
 	dlg_info("An info log");
 	dlg_error("An error log");
-	dlg_critical("A critical log");
+	dlg_fatal("A fatal log");
 
-	// the string literals suffix only work when using
-	// the dlg::literals namespace like done in this file
-	// alternatively simply construct a tag with dlg::Tag{"name"}
-	dlg_info("main"_tag, "Use dlg tags to show where a log call came from");
-	dlg_info("main"_tag, "We are in the main function");
-	dlg_info("main"_tag, "That can also be done using a scoped tag guard");
+	// you can also attach tags to log and assert calls
+	// they can (as later shown) be used to e.g. filter certain
+	// messages or to decide where messages should go
+	dlg_infot(("main"), "Use dlg tags to show where a log call came from");
+	dlg_infot(("main"), "We are in the main function");
+	dlg_infot(("main"), "That can also be done using a scoped tag guard");
 
 	{
-		// using a dlg_tag guard
-		dlg_tag("dlg", "example", "main_sub");
+		// This set those tags in the current scope
+		// Use dlg_tags_global to also appply it to other functions
+		// called from the given scope
+		dlg_tags("dlg", "example", "main_sub");
 
 		dlg_info("Now we are using the tags specified above");
 		dlg_info("Btw, if this output is confusing for you, look at example.cpp");
