@@ -53,9 +53,12 @@ extern "C" {
 // #define DLG_DEFAULT_TAGS
 
 // The function used for formatting. Can have any signature, but must be callable with
-// the arguments the log/assertions macros are called with. Must return a char*
-// that is either equal to *dlg_thread_buffer(NULL) or will be freed using free.
-// Usually a c function with ... (i.e. using va_list) or a variadic c++ template.
+// the arguments the log/assertions macros are called with. Must return a const char*
+// that will not be freed by dlg, the formatting function must keep track of it.
+// The formatting function might use dlg_thread_buffer or a custom owned buffer.
+// The returned const char* has to be valid until the dlg log/assertion ends.
+// Usually a c function with ... (i.e. using va_list) or a variadic c++ template do
+// allow formatting.
 #ifndef DLG_FMT_FUNC
 	#define DLG_FMT_FUNC dlg__printf_format
 #endif
@@ -124,13 +127,15 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// Can also be used various other things such as dealing with critical failed
 	// assertions or filtering calls based on the passed tags.
 	// The default handler is dlg_default_output (see its doc for more info).
+	// If using c++ make sure the registered handler cannot throw (since this is UB)
+	// e.g. by wrapping everything into a try-catch blog.
 	inline void dlg_set_handler(dlg_handler handler, void* data) {}
 
 	// The default output handler.
 	// Only use this to reset the output handler, prefer to use 
 	// dlg_generic_output (from output.h) which this function simply calls.
 	// It also flushes the stream used.
-	inline void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream) {}
+	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {}
 
 	// Adds the given tag associated with the given function to the thread specific list.
 	// If func is not NULL the tag will only applied to calls from the same function.
@@ -185,9 +190,9 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 
 	// - Private interface: not part of the abi/api but needed in macros -
 	// Formats the given format string and arguments as printf would, uses the thread buffer.
-	char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
+	const char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
 	void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
-		const char* func, char* string, const char* expr);
+		const char* func, const char* string, const char* expr);
 	const char* dlg__strip_root_path(const char* file, const char* base);
 
 #endif // DLG_DISABLE
@@ -198,7 +203,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 #define dlg_info(...) dlg_log(dlg_level_info, __VA_ARGS__)
 #define dlg_warn(...) dlg_log(dlg_level_warn, __VA_ARGS__)
 #define dlg_error(...) dlg_log(dlg_level_error, __VA_ARGS__)
-#define dlg_critical(...) dlg_log(dlg_level_fatal, __VA_ARGS__)
+#define dlg_fatal(...) dlg_log(dlg_level_fatal, __VA_ARGS__)
 
 // Tagged leveled logging
 #define dlg_tracet(tags, ...) dlg_logt(dlg_level_trace, tags, __VA_ARGS__)
@@ -206,7 +211,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 #define dlg_infot(tags, ...) dlg_logt(dlg_level_info, tags, __VA_ARGS__)
 #define dlg_warnt(tags, ...) dlg_logt(dlg_level_warn, tags, __VA_ARGS__)
 #define dlg_errort(tags, ...) dlg_logt(dlg_level_error, tags, __VA_ARGS__)
-#define dlg_datal(tags, ...) dlg_logt(dlg_level_fatal, tags, __VA_ARGS__)
+#define dlg_fatalt(tags, ...) dlg_logt(dlg_level_fatal, tags, __VA_ARGS__)
 
 // Assert macros useing DLG_DEFAULT_ASSERT as level
 #define dlg_assert(expr) dlg_assertl(DLG_DEFAULT_ASSERT, expr)

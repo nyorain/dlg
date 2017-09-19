@@ -390,11 +390,11 @@ void dlg_cleanup() {
 		vec_free((*data)->pairs);
 		vec_free((*data)->tags);
 		free((*data)->buffer);
-		free((*data));
+		free(*data);
 	}
 }
 
-char* dlg__printf_format(const char* str, ...) {
+const char* dlg__printf_format(const char* str, ...) {
 	va_list vlist;
 	va_start(vlist, str);
 
@@ -417,7 +417,7 @@ char* dlg__printf_format(const char* str, ...) {
 }
 
 void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
-		const char* func, char* string, const char* expr) {
+		const char* func, const char* string, const char* expr) {
 	struct dlg_data* data = dlg_data();
 	unsigned int tag_count = 0; 
 	
@@ -455,9 +455,6 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 
 	g_handler(&origin, string, g_data);
 	vec_popc(data->tags, tag_count + global_tag_count); // tag_count contains the terminating NULL
-	if(string != dlg_data()->buffer) {
-		free(string);
-	}
 }
 
 const char* dlg__strip_root_path(const char* file, const char* base) {
