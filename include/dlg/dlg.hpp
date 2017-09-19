@@ -14,6 +14,7 @@
 #include <streambuf>
 #include <ostream>
 #include <functional>
+#include <cstring>
 
 // TODO: document (here and in summary)
 
@@ -66,18 +67,11 @@ void handler_wrapper(const struct dlg_origin* origin, const char* str, void* dat
 		fprintf(stderr, "dlg.hpp: handler has thrown something else than std::exception");
 	}
 }
-	
-}
 
-// Allows to set a std::function as dlg handler.
-// The handler should not throw, all exceptions (and non-exceptions) are caught
-// in a wrapper since they must not be passed through dlg (since it's c and dlg
-// might be called from c code).
-void set_handler(Handler handler) {
-	static Handler handler_;
-	handler_ = std::move(handler);
-	dlg_set_handler(&detail::handler_wrapper, &handler_);
-}
+struct StringParam {
+	const char* string;
+	size_t size;
+};
 
 class StreamBuffer : public std::basic_streambuf<char> {
 public:
@@ -102,11 +96,13 @@ protected:
 	size_t& size_;
 };
 
-void tformat(std::string_view fmt, std::ostream& output)
+// TODO: maybe don't use exceptions for wrong formats? Not that critical probably...
+void tformat(StringParam fmt, std::ostream& output)
 {
 	// check that no '{}' is left
 	bool pending = false;
-	for(auto c : fmt) {
+	for(auto i = 0u; i < fmt.size; ++i) {
+		auto c = fmt.string[i];
 		if(pending) {
 			pending = false;
 			if(c == '}') {
@@ -117,20 +113,21 @@ void tformat(std::string_view fmt, std::ostream& output)
 		}
 	}
 	
-	output << fmt;
+	output << fmt.string;
 }
 
 template<typename Arg, typename... Args>
-void tformat(std::string_view fmt, std::ostream& output, Arg&& arg, Args&&... args)
+void tformat(StringParam fmt, std::ostream& output, Arg&& arg, Args&&... args)
 {
 	bool pending = false;
-	for(auto i = 0u; i < fmt.size(); ++i) {
-		auto c = fmt[i];
+	for(auto i = 0u; i < fmt.size; ++i) {
+		auto c = fmt.string[i];
 		if(pending) {
 			pending = false;
 			if(c == '}') {
 				output << std::forward<Arg>(arg);
-				return tformat(fmt.substr(i + 1), output, std::forward<Args>(args)...);
+				StringParam substr {fmt.string + i + 1, fmt.size - i - 1};
+				return tformat(substr, output, std::forward<Args>(args)...);
 			} else {
 				output << "{" << c;
 			}
@@ -145,6 +142,8 @@ void tformat(std::string_view fmt, std::ostream& output, Arg&& arg, Args&&... ar
 	throw std::invalid_argument("Too many arguments to format supplied");
 }
 
+} // namespace detail
+
 /// Formats the given string with the given arguments.
 /// Simply replaces '{}' with the arguments in order.
 /// Throws std::invalid_argument if the string does not match
@@ -152,16 +151,27 @@ void tformat(std::string_view fmt, std::ostream& output, Arg&& arg, Args&&... ar
 /// for an ostream. The returned pointer must not be freed but it is
 /// only guaranteed to be valid until the next dlg logging/assertion call.
 template<typename... Args>
-char* format(std::string_view fmt, Args&&... args)
+char* format(const char* fmt, Args&&... args)
 {
 	std::size_t* size;
 	char** dbuf = dlg_thread_buffer(&size);
-	StreamBuffer buf(*dbuf, *size);
+	detail::StreamBuffer buf(*dbuf, *size);
 	std::ostream output(&buf);
-	tformat(fmt, output, std::forward<Args>(args)...);
+	detail::tformat({fmt, std::strlen(fmt)}, output, std::forward<Args>(args)...);
 	output.put('\0'); // terminating null char since we will use the buffer as string
 	return *dlg_thread_buffer(nullptr);
 }
+
+// Allows to set a std::function as dlg handler.
+// The handler should not throw, all exceptions (and non-exceptions) are caught
+// in a wrapper since they must not be passed through dlg (since it's c and dlg
+// might be called from c code).
+void set_handler(Handler handler) {
+	static Handler handler_;
+	handler_ = std::move(handler);
+	dlg_set_handler(&detail::handler_wrapper, &handler_);
+}
+
 
 } // namespace dlg
 

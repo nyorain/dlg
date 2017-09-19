@@ -28,7 +28,7 @@ at some point i may no longer want to maintain the cmake version).
 ## Show me something fancy already
 
 Besides a simple look into the [headers](include/dlg), have a look into the 
-__[summary](docs/v0.1.md)__ and additional documentation for the latest release.
+__[synopsis](docs/v0.2.md)__ and additional documentation for the latest release.
 
 Thousands words, explanations and pictures don't say as much as a single __[code example](docs/examples/example.cpp)__ though.
 

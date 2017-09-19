@@ -16,10 +16,8 @@ arch:
     - valgrind
   script:
     - meson build -Dtests=true
-    - cd build
-    - ninja
-    - meson test --wrapper valgrind
-    - "cat meson-logs/testlog-valgrind.txt | : "
+    - ninja -C build
+    - meson test -C build --wrapper 'valgrind --leak-check=full' -v
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"

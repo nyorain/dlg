@@ -53,7 +53,7 @@ static void* xrealloc(void* ptr, size_t size) {
 		return _isatty(_fileno(stream));
 	}
 
-	static bool init_ansi_console() {
+	static bool init_ansi_console(void) {
 		HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
 		HANDLE err = GetStdHandle(STD_OUTPUT_HANDLE);
 		if(out == INVALID_HANDLE_VALUE || err == INVALID_HANDLE_VALUE)
@@ -255,7 +255,7 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 	fflush(stream);
 }
 
-bool dlg_win_init_ansi() {
+bool dlg_win_init_ansi(void) {
 #ifdef DLG_OS_WIN
 	static volatile LONG status = 0;
 	LONG res = InterlockedCompareExchange(&status, 1, 0);
@@ -307,7 +307,7 @@ static void* vec_do_add(void* vec, unsigned int size) {
 #define vec_create_reserve(type, size, capacity) (type*) vec_do_create(sizeof(type), capcity, size)
 #define vec_init(array, size) array = vec_do_create(sizeof(*array), size * 2, size)
 #define vec_init_reserve(array, size, capacity) array = vec_do_create(sizeof(*array), capacity, size)
-#define vec_free(vec) free(vec__raw(vec))
+#define vec_free(vec) free((vec) ? vec__raw(vec) : NULL)
 #define vec_erase_range(vec, pos, count) vec_do_erase(vec, pos * sizeof(*vec), count * sizeof(*vec))
 #define vec_erase(vec, pos) vec_do_erase(vec, pos * sizeof(*vec), sizeof(*vec))
 #define vec_size(vec) vec__raw(vec)[0] / sizeof(*vec)
@@ -331,19 +331,24 @@ struct dlg_data {
 	size_t buffer_size;
 };
 
-static struct dlg_data* dlg_data() {
+static struct dlg_data** dlg_get_data(void) {
 	// NOTE: maybe don't hardcode _Thead_local, depending on build config?
 	// or make it possible to use another keyword (for older/non-c11 compilers)
 	static _Thread_local struct dlg_data* data = NULL;
-	if(!data) {
-		data = xalloc(sizeof(struct dlg_data));
-		vec_init_reserve(data->tags, 0, 20);
-		vec_init_reserve(data->pairs, 0, 20);
-		data->buffer_size = 100;
-		data->buffer = xalloc(100);
+	return &data;
+}
+
+static struct dlg_data* dlg_data(void) {
+	struct dlg_data** data = dlg_get_data();
+	if(!*data) {
+		*data = xalloc(sizeof(struct dlg_data));
+		vec_init_reserve((*data)->tags, 0, 20);
+		vec_init_reserve((*data)->pairs, 0, 20);
+		(*data)->buffer_size = 100;
+		(*data)->buffer = xalloc(100);
 	}
 
-	return data;
+	return *data;
 }
 
 void dlg_add_tag(const char* tag, const char* func) {
@@ -377,6 +382,16 @@ static void* g_data = NULL;
 void dlg_set_handler(dlg_handler handler, void* data) {
 	g_handler = handler;
 	g_data = data;
+}
+
+void dlg_cleanup() {
+	struct dlg_data** data = dlg_get_data();
+	if(*data) {
+		vec_free((*data)->pairs);
+		vec_free((*data)->tags);
+		free((*data)->buffer);
+		free((*data));
+	}
 }
 
 char* dlg__printf_format(const char* str, ...) {

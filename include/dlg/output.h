@@ -99,12 +99,18 @@ void dlg_escape_sequence(const struct dlg_style style, char buf[12]);
 // The reset style escape sequence.
 extern const char* dlg_reset_sequence;
 
+// XXX: let this function take a FILE* parameter and return true/false depending
+// on whether ansi could be set AND the given stream is stdout/stderr pointing
+// to a terminal?
+
 // Just returns true on non-windows systems.
 // On windows tries to set the console mode to ansi to make escape sequences work.
 // This works only on newer windows 10 versions. Returns false on error.
-// Only the first call to it will have an effect, the function is also threadsafe.
-// Automatically called by the default output handler.
-bool dlg_win_init_ansi();
+// Only the first call to it will have an effect, following calls just return the result.
+// The function is threadsafe. Automatically called by the default output handler.
+// This will only be able to set the mode for the stdout and stderr consoles, so
+// other streams to consoles will proably still not work.
+bool dlg_win_init_ansi(void);
 
 #ifdef __cplusplus
 } // extern "C"
