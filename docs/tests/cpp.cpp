@@ -1,4 +1,4 @@
-#define DLG_FORMAT_DEFAULT_REPLACE "$"
+#define DLG_FORMAT_DEFAULT_REPLACE "{}"
 #define DLG_DEFAULT_TAGS "dlg"
 
 #include <dlg/dlg.hpp>
