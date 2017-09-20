@@ -239,7 +239,13 @@ std::string generic_output(unsigned int features,
 	dlg_generic_output_buf(nullptr, &size, features, &origin,
 		string, styles);
 	std::string ret(++size, ' ');
-	dlg_generic_output_buf(ret.data(), &size, features, &origin,
+	
+	// NOTE: this might (theoretically) cause problems before C++17
+	//  but this function should return a string and all compilers
+	//  make it work. If you want to go sure, just use C++17
+	//  where it is guaranteed that this works (everybody is
+	//  using it anyways so shit will blow up if this fails)
+	dlg_generic_output_buf(&ret[0], &size, features, &origin,
 		string, styles);
 	return ret;
 }
