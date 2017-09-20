@@ -25,7 +25,7 @@ int main() {
 
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
 		dlg_win_init_ansi();
-		dlg_generic_output(nullptr, ~0, &origin, str, dlg_default_output_styles);
+		dlg_generic_output_stream(nullptr, ~0, &origin, str, dlg_default_output_styles);
 	});
 
 	{

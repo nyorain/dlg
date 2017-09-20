@@ -41,7 +41,11 @@ dlg_dep = declare_dependency(
 
 # sample
 if build_sample
-	sample = executable('sample', 'docs/example.cpp', dependencies: dlg_dep)
+	sample = executable('sample', 'docs/examples/example.cpp', dependencies: dlg_dep)
+	test('sample', sample)
+
+	sample_c = executable('sample-c', 'docs/examples/example.c', dependencies: dlg_dep)
+	test('sample_c', sample_c)
 endif
 
 # tests

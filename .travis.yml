@@ -14,8 +14,8 @@ arch:
     - meson
     - ninja
     - valgrind
-  script:
-    - meson build -Dtests=true
+  script: 
+    - meson build -Dtests=true -Dsample=true
     - ninja -C build
     - meson test -C build --wrapper 'valgrind --leak-check=full' -v
 

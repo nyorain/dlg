@@ -19,13 +19,13 @@ const struct dlg_style dlg_default_output_styles[] = {
 
 static void* xalloc(size_t size) {
 	void* ret = calloc(size, 1);
-	if(!ret) fprintf(stderr, "calloc returned NULL, things are going to burn");
+	if(!ret) fprintf(stderr, "dlg: calloc returned NULL, probably crashing (size: %zu)\n", size);
 	return ret;
 }
 
 static void* xrealloc(void* ptr, size_t size) {
 	void* ret = realloc(ptr, size);
-	if(!ret) fprintf(stderr, "realloc returned NULL, things are going to burn");
+	if(!ret) fprintf(stderr, "dlg: realloc returned NULL, probably crashing (size: %zu)\n", size);
 	return ret;
 }
 
@@ -77,7 +77,7 @@ static void* xrealloc(void* ptr, size_t size) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 		free(buf1);
 	}
@@ -86,7 +86,7 @@ static void* xrealloc(void* ptr, size_t size) {
 		char buf1[needed + 1];
 		wchar_t buf2[needed + 1];
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 	}
 
@@ -119,10 +119,7 @@ void dlg_escape_sequence(struct dlg_style style, char buf[12]) {
 	}
 }
 
-void dlg_fprintf(FILE* stream, const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	
+void dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 #ifdef DLG_OS_WIN
 	void* handle = NULL;
 	if(stream == stdout) {
@@ -134,23 +131,32 @@ void dlg_fprintf(FILE* stream, const char* format, ...) {
 	if(handle) {
 		va_list args_copy;
 		va_copy(args_copy, args);
-		size_t needed = vsnprintf(NULL, 0, format, args_copy);
+		int needed = vsnprintf(NULL, 0, format, args_copy);
 		va_end(args_copy);
+
+		if(needed < 0) {
+			fprintf(stderr, "dlg_fprintf: invalid format/arguments given\n");
+			return;
+		}
 
 		// we don't allocate more than 64kb on the stack
 		if(needed > 64 * 1024) {
 			win_write_heap(handle, needed, format, args);
-			va_end(args);
 			return;
 		} else {
 			win_write_stack(handle, needed, format, args);
-			va_end(args);
 			return;
 		}
 	}
 #endif
 
 	vfprintf(stream, format, args);
+}
+
+void dlg_fprintf(FILE* stream, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	dlg_vfprintf(stream, format, args);
 	va_end(args);
 }
 
@@ -161,26 +167,22 @@ void dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format
 	fprintf(stream, "%s", buf);
 	va_list args;
 	va_start(args, format);
-	vfprintf(stream, format, args);
+	dlg_vfprintf(stream, format, args);
 	va_end(args);
 	fprintf(stream, "%s", dlg_reset_sequence);
 }
 
-void dlg_generic_output(FILE* stream, unsigned int features,
-		const struct dlg_origin* origin, const char* string,
+void dlg_generic_output(dlg_generic_output_handler output, void* data, 
+		unsigned int features, const struct dlg_origin* origin, const char* string, 
 		const struct dlg_style styles[6]) {
-	if(!stream) {
-		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
-	}
-		
 	if(features & dlg_output_style) {
 		char buf[12];
 		dlg_escape_sequence(styles[origin->level], buf);
-		fprintf(stream, "%s", buf);
+		output(data, "%s", buf);
 	}
 	
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
-		fprintf(stream, "[");
+		output(data, "[");
 	}
 	
 	bool first_meta = true;
@@ -189,67 +191,124 @@ void dlg_generic_output(FILE* stream, unsigned int features,
 		struct tm *tm_info = localtime(&t);
 		char timebuf[32];
 		strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm_info);
-		fprintf(stream, "%s", timebuf);
+		output(data, "%s", timebuf);
 		first_meta = false;
 	}
 	
 	if(features & dlg_output_file_line) {
 		if(!first_meta) {
-			fprintf(stream, " ");
+			output(data, " ");
 		}
 		
 		// file names might conatin non-ascii chars
-		dlg_fprintf(stream, "%s:%u", origin->file, origin->line); 
+		output(data, "%s:%u", origin->file, origin->line); 
 		first_meta = false;
 	}
 	
 	if(features & dlg_output_func) {
 		if(!first_meta) {
-			fprintf(stream, " ");
+			output(data, " ");
 		}
 		
 		// NOTE: use dlg_fprintf here? func names should really be ascii
 		// and can we otherwise be sure they are utf-8? probably not
-		fprintf(stream, "%s", origin->func);
+		output(data, "%s", origin->func);
 		first_meta = false;
 	}
 	
 	if(features & dlg_output_tags) {
 		if(!first_meta) {
-			fprintf(stream, " ");
+			output(data, " ");
 		}
 		
-		fprintf(stream, "{");
+		output(data, "{");
 		bool first_tag = true;
 		for(const char** tags = origin->tags; *tags; ++tags) {
 			if(!first_tag) {
-				fprintf(stream, ", ");
+				output(data, ", ");
 			}
 			
-			fprintf(stream, "%s", *tags);
+			output(data, "%s", *tags);
 			first_tag = false;
 		}
 		
-		fprintf(stream, "}");
+		output(data, "}");
 	}
 	
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
-		fprintf(stream, "] ");
+		output(data, "] ");
 	}
 	
 	if(origin->expr && string) {
-		dlg_fprintf(stream, "assertion '%s' failed: '%s'", origin->expr, string);
+		output(data, "assertion '%s' failed: '%s'", origin->expr, string);
 	} else if(origin->expr) {
-		dlg_fprintf(stream, "assertion '%s' failed", origin->expr);
+		output(data, "assertion '%s' failed", origin->expr);
 	} else if(string) {
-		dlg_fprintf(stream, "%s", string);
+		output(data, "%s", string);
 	}
 	
 	if(features & dlg_output_style) {
-		fprintf(stream, "%s", dlg_reset_sequence);
+		output(data, "%s", dlg_reset_sequence);
+	}
+
+	// TODO: really output this newline?
+	// maybe someones wants to print multiple outputs in one line?
+	output(data, "\n");
+}
+
+struct buf {
+	char* buf;
+	size_t* size;
+};
+
+static void print_size(void* size, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+
+	// TODO: check for -1? we only use our own formats here
+	*((size_t*) size) += vsnprintf(NULL, 0, format, args); 
+	va_end(args);
+}
+
+static void print_buf(void* dbuf, const char* format, ...) {
+	struct buf* buf = dbuf;
+	va_list args;
+	va_start(args, format);
+
+	// TODO: check for -1? we only use our own formats here
+	int printed = vsnprintf(buf->buf, *buf->size, format, args); 
+	va_end(args);
+	*buf->size -= printed;
+	buf->buf += printed;
+}
+
+void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
+		const struct dlg_origin* origin, const char* string, 
+		const struct dlg_style styles[6]) {
+	if(buf) {
+		struct buf mbuf = {buf, size};
+		dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
+	} else {
+		*size = 0;
+		dlg_generic_output(print_size, size, features, origin, string, styles);
+	}
+}
+
+static void print_stream(void* stream, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	dlg_vfprintf(stream, format, args);
+	va_end(args);
+}
+
+void dlg_generic_output_stream(FILE* stream, unsigned int features,
+		const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6]) {
+	if(!stream) {
+		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
 	
-	fprintf(stream, "\n");
+	dlg_generic_output(print_stream, stream, features, origin, string, styles);
 }
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
@@ -263,7 +322,7 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 		features |= dlg_output_style;
 	}
 
-	dlg_generic_output(stream, features, origin, string, dlg_default_output_styles);
+	dlg_generic_output_stream(stream, features, origin, string, dlg_default_output_styles);
 	fflush(stream);
 }
 
@@ -416,14 +475,21 @@ const char* dlg__printf_format(const char* str, ...) {
 
 	va_list vlistcopy;
 	va_copy(vlistcopy, vlist);
-	unsigned int needed = vsnprintf(NULL, 0, str, vlist);
+	int needed = vsnprintf(NULL, 0, str, vlist);
+	if(needed < 0) {
+		printf("dlg__printf_format: invalid format given\n");
+		va_end(vlist);
+		va_end(vlistcopy);
+		return NULL;
+	}
+
 	va_end(vlist);
 
 	size_t* buf_size;
 	char** buf = dlg_thread_buffer(&buf_size);
-	if(*buf_size <= needed) {
+	if(*buf_size <= (unsigned int) needed) {
 		*buf_size = (needed + 1) * 2;
-		buf = xrealloc(buf_size, *buf_size);
+		*buf = xrealloc(*buf, *buf_size);
 	}
 
 	vsnprintf(*buf, *buf_size, str, vlistcopy);

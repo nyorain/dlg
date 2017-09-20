@@ -5,8 +5,7 @@
 
 // TODO: custom format functions (using dlg_thread_buffer)
 //  other custom output handlers
-//  extensive output.h testing
-//  check dlg_add_tag local/global works correctly (across functions)
+//  some more output.h testing
 
 enum check {
 	check_line = 1,
@@ -19,7 +18,7 @@ enum check {
 
 struct {
 	enum check check;
-	int line;
+	unsigned int line;
 	const char** tags;
 	const char* expr;
 	const char* string;
@@ -40,6 +39,9 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 	printf("$$$ Expect '" #a "' failed [%d]\n", __LINE__); \
 	++gerror; \
 }
+
+void foo_log();
+void foo_assert();
 
 int main() {
 	dlg_log(dlg_level_trace, "trace %d", 1);
@@ -74,12 +76,12 @@ int main() {
 	dlg_assertlm(dlg_level_fatal, false, "Should %s, %s", "fire", "fatal");
 	printf("----\n\n");
 
-	dlg_assertlm(dlg_level_trace, false, "Should %s, %s", "not fire", "trace");
-	dlg_assertlm(dlg_level_debug, false, "Should %s, %s", "not fire", "debug");
-	dlg_assertlm(dlg_level_info, false, "Should %s, %s", "not fire", "info");
-	dlg_assertlm(dlg_level_warn, false, "Should %s, %s", "not fire", "warn");
-	dlg_assertlm(dlg_level_error, false, "Should %s, %s", "not fire", "error");
-	dlg_assertlm(dlg_level_fatal, false, "Should %s, %s", "not fire", "fatal");
+	dlg_assertlm(dlg_level_trace, true, "Should %s, %s", "not fire", "trace");
+	dlg_assertlm(dlg_level_debug, true, "Should %s, %s", "not fire", "debug");
+	dlg_assertlm(dlg_level_info, true, "Should %s, %s", "not fire", "info");
+	dlg_assertlm(dlg_level_warn, true, "Should %s, %s", "not fire", "warn");
+	dlg_assertlm(dlg_level_error, true, "Should %s, %s", "not fire", "error");
+	dlg_assertlm(dlg_level_fatal, true, "Should %s, %s", "not fire", "fatal");
 	printf("----\n\n");
 
 	printf("- Calling cleanup -\n");
@@ -241,6 +243,20 @@ int main() {
 	dlg_assert(false);
 	EXPECT(gdata.fired);
 
+	// correct scope of added tags
+	const char* t7[] = {"gt3", NULL};
+	dlg_add_tag("lt3", __FUNCTION__);
+	dlg_add_tag("gt3", NULL);
+	gdata.fired = false;
+	gdata.tags = t7;
+	foo_log();
+	EXPECT(gdata.fired);
+	foo_assert();
+	EXPECT(dlg_remove_tag("lt3", __FUNCTION__));
+	EXPECT(dlg_remove_tag("gt3", NULL));
+	EXPECT(!dlg_remove_tag("lt3", __FUNCTION__));
+	EXPECT(!dlg_remove_tag("non-existent", NULL));
+
 	// reset handler
 	fclose(check_file);
 
@@ -263,6 +279,14 @@ int main() {
 	// return count of total errors
 	dlg_cleanup();
 	return gerror;
+}
+
+void foo_log() {
+	dlg_info("log call from foo");
+}
+
+void foo_assert() {
+	dlg_assert(false);
 }
 
 void custom_handler(const struct dlg_origin* origin, const char* string, void* data) {
@@ -334,5 +358,5 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 	}
 
 	unsigned int features = dlg_output_tags | dlg_output_style | dlg_output_time | dlg_output_file_line;
-	dlg_generic_output(check_file, features, origin, string, dlg_default_output_styles);
+	dlg_generic_output_stream(check_file, features, origin, string, dlg_default_output_styles);
 }

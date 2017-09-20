@@ -59,6 +59,7 @@ struct dlg_style {
 
 // Like fprintf but fixes utf-8 output to console on windows.
 void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
+void dlg_vfprintf(FILE* stream, const char* format, va_list list);
 
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
@@ -81,8 +82,28 @@ extern const struct dlg_style dlg_default_output_styles[6];
 
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
+// Will call the given output func with the given data (and format + args to print)
+// for everything it has to print in printf format. 
+// See also the *_stream and *_buf specializations for common usage.
+// The given output function must not be NULL.
+typedef void(*dlg_generic_output_handler)(void* data, const char* format, ...);
+void dlg_generic_output(dlg_generic_output_handler output, void* data, 
+		unsigned int features, const struct dlg_origin* origin, const char* string, 
+		const struct dlg_style styles[6]);
+
+// Generic output function. Used by the default output handler and might be useful
+// for custom output handlers (that don't want to manually format the output).
 // If stream is NULL uses stdout for level < warn, stderr otherwise.
-void dlg_generic_output(FILE* stream, unsigned int features,
+// Automatically uses dlg_fprintf to assure correct utf-8 even on windows consoles.
+void dlg_generic_output_stream(FILE* stream, unsigned int features,
+	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_style styles[6]);
+
+// Generic output function (see dlg_generic_output) that uses a buffer instead of 
+// a stream. buf must at least point to *size bytes. Will set *size to the number
+// of bytes written (capped to the given size), if buf == NULL will set *size
+// to the needed size. The size parameter must not be NULL.
+void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 	const struct dlg_origin* origin, const char* string, 
 	const struct dlg_style styles[6]);
 

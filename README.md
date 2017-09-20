@@ -13,9 +13,9 @@ well-documented logging interface in a few hundred lines*):
 
 There are 3 headers:
 
-- <dlg/dlg.h> (around 200 loc): Everything you need, no dependencies
-- <dlg/output.h> (around 100 loc): Utilities for implementing custom output handlers
-- <dlg/dlg.hpp> (around 200 loc): Modern C++11 utilities, alternative formatter
+- <dlg/dlg.h> (around 230 loc): Everything you need, no dependencies
+- <dlg/output.h> (around 150 loc): Utilities for implementing custom output handlers
+- <dlg/dlg.hpp> (around 250 loc): Modern C++11 utilities, alternative formatter
 
 You can either build dlg.c as library or include it directly into your project 
 (nothing else needed).
@@ -31,6 +31,18 @@ Besides a simple look into the [headers](include/dlg), have a look into the
 __[synopsis](docs/v0.2.md)__ and additional documentation for the latest release.
 
 Thousands words, explanations and pictures don't say as much as a single __[code example](docs/examples/example.cpp)__ though.
+Here a simple preview of its core functionality (there is more fancy stuff, look into the linked example):
+
+```c
+dlg_warn("This is a warning. If on a console, it will be printed yellow");
+dlg_error("Errors are red. Colors work even on windows consoles");
+dlg_assertm(1 == 2, "Well, this assertion will probably %s...", "fail");
+dlg_infot(("tag1", "tag2"), "We can tag our stuff. This can be used to filter/redirect messages");
+dlg_asserttm(("tag3"), 3 == 2, "The same goes for asserts");
+dlg_info("Another feature: Utf-8 printing works automatically for שׁǐŉďốẅś consoles");
+dlg_fatal("This one is printed bold. For more information, read the linked example above already");
+dlg_cleanup(); // release one-time allocated resources, just to make our valgrind checks happy
+```
 
 Nontheless a rather beautiful picture of dlg in action for you. It is probably rather nonsensical without
 having read the example though:

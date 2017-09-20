@@ -24,10 +24,12 @@
 #endif
 
 #include <dlg/dlg.h>
+#include <dlg/output.h>
 #include <streambuf>
 #include <ostream>
 #include <functional>
 #include <cstring>
+#include <string>
 #include <sstream>
 
 namespace dlg {
@@ -121,13 +123,19 @@ std::string rformat(const char* replace, const char* fmt, Args&&... args) {
 	return sstream.str();
 }
 
-
 /// Simply calls rformat with DLG_FORMAT_DEFAULT_REPLACE (defaulted to '{}') as
 /// replace string.
 template<typename... Args>
 std::string format(const char* fmt, Args&&... args) {
 	return rformat(DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
 }
+
+/// Specialization of dlg_generic_output that returns a std::string.
+std::string generic_output(unsigned int features, 
+	const struct dlg_origin& origin, const char* string, 
+	const struct dlg_style styles[6] = dlg_default_output_styles);
+
+
 
 // - Private interface & implementation -
 namespace detail {
@@ -222,6 +230,18 @@ void set_handler(Handler handler) {
 	static Handler handler_;
 	handler_ = std::move(handler);
 	dlg_set_handler(&detail::handler_wrapper, &handler_);
+}
+
+std::string generic_output(unsigned int features, 
+		const struct dlg_origin& origin, const char* string, 
+		const struct dlg_style styles[6]) {
+	std::size_t size;	
+	dlg_generic_output_buf(nullptr, &size, features, &origin,
+		string, styles);
+	std::string ret(++size, ' ');
+	dlg_generic_output_buf(ret.data(), &size, features, &origin,
+		string, styles);
+	return ret;
 }
 
 } // namespace dlg
