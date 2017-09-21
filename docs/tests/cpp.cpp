@@ -1,8 +1,10 @@
-#define DLG_DEFAULT_TAGS "dlg"
+#define DLG_DEFAULT_TAGS "dlg", 
+// #pragma execution_character_set("utf-8")
 
 #include <dlg/dlg.hpp>
 #include <dlg/output.h>
 #include <iomanip>
+#include <fstream>
 
 unsigned int gerror = 0;
 
@@ -22,6 +24,9 @@ int main() {
 	EXPECT(dlg::format("{{}}", 2) == "{2}");
 	EXPECT(dlg::format("\\{}\\") == "{}");
 	EXPECT(dlg::format("\\{{}}\\", 2) == "\\{2}\\");
+	
+	std::ofstream ofs("text.txt");
+	ofs << "äüß\n";
 
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
 		dlg_win_init_ansi();

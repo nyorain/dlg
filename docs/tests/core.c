@@ -93,7 +93,7 @@ int main() {
 	dlg_set_handler(&custom_handler, &gdata);
 	check_file = fopen("dlg_test_output.txt", "w");
 	EXPECT(!dlg_is_tty(check_file));
-	dlg_fprintf(check_file, "beginning of %s", "test output file\n");
+	dlg_fprintf(check_file, u8"beginning of (some utf-8: äüß) %s", "test output file\n");
 
 	// checks
 	// logging
@@ -216,7 +216,7 @@ int main() {
 
 	// default
 	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS "d1", "d2", "d3", NULL
+	#define DLG_DEFAULT_TAGS "d1", "d2", "d3", 
 
 	const char* t5[] = {"d1", "d2", "d3", NULL};
 	gdata.tags = t5;
@@ -238,7 +238,7 @@ int main() {
 	EXPECT(dlg_remove_tag("gt2", NULL));
 
 	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS NULL
+	#define DLG_DEFAULT_TAGS 
 
 	gdata.tags = t1;
 	gdata.fired = false;
@@ -299,7 +299,11 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 		++gerror;
 	}
 
+#ifdef _MSC_VER // srsly, why am i even supporting msvc?!
+	if(strcmp(origin->file, "docs\\tests\\core.c") != 0) {
+#else
 	if(strcmp(origin->file, "docs/tests/core.c") != 0) {
+#endif
 		printf("$$$ handler: invalid file %s [%d]\n", origin->file, origin->line);
 		++gerror;
 	}

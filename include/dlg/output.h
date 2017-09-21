@@ -58,13 +58,13 @@ struct dlg_style {
 };
 
 // Like fprintf but fixes utf-8 output to console on windows.
-void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
-void dlg_vfprintf(FILE* stream, const char* format, va_list list);
+DLG_API void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
+DLG_API void dlg_vfprintf(FILE* stream, const char* format, va_list list);
 
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
 // On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
-void dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
+DLG_API void dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
 	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
 	
 // Features to output from the generic output handler
@@ -78,7 +78,7 @@ enum dlg_output_feature {
 
 // The default level-dependent output styles. The array values represent the styles
 // to be used for the associated level (i.e. [0] for trace level).
-extern const struct dlg_style dlg_default_output_styles[6];
+DLG_API const struct dlg_style dlg_default_output_styles[6];
 
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
@@ -87,7 +87,7 @@ extern const struct dlg_style dlg_default_output_styles[6];
 // See also the *_stream and *_buf specializations for common usage.
 // The given output function must not be NULL.
 typedef void(*dlg_generic_output_handler)(void* data, const char* format, ...);
-void dlg_generic_output(dlg_generic_output_handler output, void* data, 
+DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data, 
 		unsigned int features, const struct dlg_origin* origin, const char* string, 
 		const struct dlg_style styles[6]);
 
@@ -95,7 +95,7 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 // for custom output handlers (that don't want to manually format the output).
 // If stream is NULL uses stdout for level < warn, stderr otherwise.
 // Automatically uses dlg_fprintf to assure correct utf-8 even on windows consoles.
-void dlg_generic_output_stream(FILE* stream, unsigned int features,
+DLG_API void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	const struct dlg_origin* origin, const char* string, 
 	const struct dlg_style styles[6]);
 
@@ -103,22 +103,22 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 // a stream. buf must at least point to *size bytes. Will set *size to the number
 // of bytes written (capped to the given size), if buf == NULL will set *size
 // to the needed size. The size parameter must not be NULL.
-void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
+DLG_API void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 	const struct dlg_origin* origin, const char* string, 
 	const struct dlg_style styles[6]);
 
 // Returns if the given stream is a tty. Useful for custom output handlers
 // e.g. to determine whether to use color.
-bool dlg_is_tty(FILE* stream);
+DLG_API bool dlg_is_tty(FILE* stream);
 	
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will
 // probably result in a buffer overflow or garbage being printed).
 // If all member of style are 'none' will simply nullterminate the first buf char.
-void dlg_escape_sequence(struct dlg_style style, char buf[12]);
+DLG_API void dlg_escape_sequence(struct dlg_style style, char buf[12]);
 
 // The reset style escape sequence.
-extern const char* dlg_reset_sequence;
+DLG_API const char* dlg_reset_sequence;
 
 // XXX: let this function take a FILE* parameter and return true/false depending
 // on whether ansi could be set AND the given stream is stdout/stderr pointing
@@ -131,7 +131,7 @@ extern const char* dlg_reset_sequence;
 // The function is threadsafe. Automatically called by the default output handler.
 // This will only be able to set the mode for the stdout and stderr consoles, so
 // other streams to consoles will proably still not work.
-bool dlg_win_init_ansi(void);
+DLG_API bool dlg_win_init_ansi(void);
 
 #ifdef __cplusplus
 } // extern "C"

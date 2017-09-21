@@ -29,6 +29,17 @@ static void* xrealloc(void* ptr, size_t size) {
 	return ret;
 }
 
+// compiler-specific
+#ifdef _MSC_VER
+	#define DLG_THREAD_LOCAL __declspec(thread)
+	
+	// https://stackoverflow.com/questions/29075288/convert-const-char-to-void
+	// spoiler: microsoft is wrong once again
+	#pragma warning(disable : 4090) 
+#else
+	#define DLG_THREAD_LOCAL _Thread_local
+#endif
+
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
@@ -44,10 +55,13 @@ static void* xrealloc(void* ptr, size_t size) {
 	#include <windows.h>
 	#include <io.h>
 
-	// thank you for nothing, microsoft
+	// thanks for nothing, microsoft
 	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
+	
+	// the max buffer size we will convert on the stack
+	#define DLG_MAX_STACK_BUF_SIZE 1024
 	
 	bool dlg_is_tty(FILE* stream) {
 		return _isatty(_fileno(stream));
@@ -83,8 +97,8 @@ static void* xrealloc(void* ptr, size_t size) {
 	}
 	
 	static void win_write_stack(void* handle, size_t needed, const char* format, va_list args) {
-		char buf1[needed + 1];
-		wchar_t buf2[needed + 1];
+		char buf1[DLG_MAX_STACK_BUF_SIZE];
+		wchar_t buf2[DLG_MAX_STACK_BUF_SIZE];
 		vsnprintf(buf1, needed + 1, format, args);
 	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
@@ -139,8 +153,10 @@ void dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 			return;
 		}
 
-		// we don't allocate more than 64kb on the stack
-		if(needed > 64 * 1024) {
+		// we don't allocate too much on the stack
+		// but we also don't want to call alloc every logging call
+		// or use another cached buffer
+		if(needed >= DLG_MAX_STACK_BUF_SIZE) {
 			win_write_heap(handle, needed, format, args);
 			return;
 		} else {
@@ -396,6 +412,8 @@ struct dlg_tag_func_pair {
 	const char* func;
 };
 
+typedef const char* cstr;
+
 struct dlg_data {
 	const char** tags; // vec
 	struct dlg_tag_func_pair* pairs; // vec
@@ -406,7 +424,7 @@ struct dlg_data {
 static struct dlg_data** dlg_get_data(void) {
 	// NOTE: maybe don't hardcode _Thead_local, depending on build config?
 	// or make it possible to use another keyword (for older/non-c11 compilers)
-	static _Thread_local struct dlg_data* data = NULL;
+	static DLG_THREAD_LOCAL struct dlg_data* data = NULL;
 	return &data;
 }
 
@@ -503,6 +521,8 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	struct dlg_data* data = dlg_data();
 	unsigned int tag_count = 0; 
 	
+	void* d = data->tags;
+	
 	// push default tags
 	while(tags[tag_count]) { 
 		vec_push(data->tags, tags[tag_count++]);
@@ -544,7 +564,7 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 
 	const char* saved = file;
 	if(*file == '.') {
-		while(*(++file) == '.' || *file == '/');
+		while(*(++file) == '.' || *file == '/' || *file == '\\');
 		if(*file == '\0') {
 			return saved;
 		}

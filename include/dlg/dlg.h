@@ -49,10 +49,10 @@ extern "C" {
 #endif
 
 // Default tags applied to all logs/assertions (in the defining file).
-// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2", NULL``` (with the last NULL!),
-// or just NULL (or not defined in which case they are defaulted to just NULL)
+// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2", ``` (with the last comma!),
+// or just nothing (as defaulted here)
 #ifndef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS NULL
+	#define DLG_DEFAULT_TAGS
 #endif
 
 // The function used for formatting. Can have any signature, but must be callable with
@@ -66,14 +66,21 @@ extern "C" {
 	#define DLG_FMT_FUNC dlg__printf_format
 #endif
 
+// Don't use this, only if you know what you are doing!
+// Could e.g. on windows when compiling with msvc and using a shared library of dlg
+// be set to __declspec(import)
+#ifndef DLG_API
+	#define DLG_API
+#endif
+
 // - utility -
 // two methods needed since cplusplus does not support compound literals
 // and c does not support uniform initialization
 #ifdef __cplusplus
 	typedef const char* const DLG_STRL_[];
-	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGS, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
 #else
-	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGS, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
 #endif
 
 #ifdef __GNUC__
@@ -178,19 +185,19 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
-	void dlg_set_handler(dlg_handler handler, void* data);
-	void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream);
-	void dlg_add_tag(const char* tag, const char* func);
-	bool dlg_remove_tag(const char* tag, const char* func);
-	char** dlg_thread_buffer(size_t** size);
-	void dlg_cleanup();
+	DLG_API void dlg_set_handler(dlg_handler handler, void* data);
+	DLG_API void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream);
+	DLG_API void dlg_add_tag(const char* tag, const char* func);
+	DLG_API bool dlg_remove_tag(const char* tag, const char* func);
+	DLG_API char** dlg_thread_buffer(size_t** size);
+	DLG_API void dlg_cleanup();
 
 	// - Private interface: not part of the abi/api but needed in macros -
 	// Formats the given format string and arguments as printf would, uses the thread buffer.
-	const char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
-	void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
+	DLG_API const char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
+	DLG_API void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
 		const char* func, const char* string, const char* expr);
-	const char* dlg__strip_root_path(const char* file, const char* base);
+	DLG_API const char* dlg__strip_root_path(const char* file, const char* base);
 
 #endif // DLG_DISABLE
 
