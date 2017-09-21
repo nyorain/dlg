@@ -521,8 +521,6 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	struct dlg_data* data = dlg_data();
 	unsigned int tag_count = 0; 
 	
-	void* d = data->tags;
-	
 	// push default tags
 	while(tags[tag_count]) { 
 		vec_push(data->tags, tags[tag_count++]);

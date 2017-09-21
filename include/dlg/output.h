@@ -78,7 +78,7 @@ enum dlg_output_feature {
 
 // The default level-dependent output styles. The array values represent the styles
 // to be used for the associated level (i.e. [0] for trace level).
-DLG_API const struct dlg_style dlg_default_output_styles[6];
+DLG_API extern const struct dlg_style dlg_default_output_styles[6];
 
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
@@ -118,7 +118,7 @@ DLG_API bool dlg_is_tty(FILE* stream);
 DLG_API void dlg_escape_sequence(struct dlg_style style, char buf[12]);
 
 // The reset style escape sequence.
-DLG_API const char* dlg_reset_sequence;
+DLG_API extern const char* dlg_reset_sequence;
 
 // XXX: let this function take a FILE* parameter and return true/false depending
 // on whether ansi could be set AND the given stream is stdout/stderr pointing

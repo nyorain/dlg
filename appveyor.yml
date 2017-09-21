@@ -5,8 +5,6 @@ environment:
     - arch: x64
       compiler: mingw
     - arch: x86
-      compiler: msvc2010
-    - arch: x86
       compiler: msvc2015
     - arch: x64
       compiler: msvc2015
@@ -19,7 +17,6 @@ install:
   - cmd: if %compiler%==mingw (appveyor-retry appveyor DownloadFile http://downloads.sourceforge.net/mingw-w64/x86_64-7.1.0-release-posix-seh-rt_v5-rev0.7z)
   - cmd: if %compiler%==mingw (7z x x86_64-7.1.0-release-posix-seh-rt_v5-rev0.7z -oc:\mingw > nul)
     # init msvc
-  - cmd: if %compiler%==msvc2010 ( call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" %arch% )
   - cmd: if %compiler%==msvc2015 ( call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %arch% )
     # install ninja
   - appveyor-retry appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.6.0/ninja-win.zip" -FileName ninja.zip

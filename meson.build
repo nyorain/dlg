@@ -22,16 +22,17 @@ headers = files([
 
 # TODO: import args?
 dlg_args = []
+common_args = []
 if meson.get_compiler('c').get_id() == 'msvc'
-	dlg_args += '-DDLG_API=__declspec(dllexport) extern'
-	dlg_args += '/utf-8'
+	dlg_args += '-DDLG_API=__declspec(dllexport)'
+	common_args += '/utf-8'
 endif
 
 # build library
 if build_library
 	dlg_lib = library('dlg',
 		'src/dlg/dlg.c',
-		c_args: dlg_args,
+		c_args: dlg_args + common_args,
 		include_directories: inc)
 	libs = [dlg_lib]
 else
@@ -46,10 +47,16 @@ dlg_dep = declare_dependency(
 
 # sample
 if build_sample
-	sample = executable('sample', 'docs/examples/example.cpp', dependencies: dlg_dep)
+	sample = executable('sample', 
+		'docs/examples/example.cpp', 
+		cpp_args: common_args,
+		dependencies: dlg_dep)
 	test('sample', sample)
 
-	sample_c = executable('sample-c', 'docs/examples/example.c', dependencies: dlg_dep)
+	sample_c = executable('sample-c', 
+		'docs/examples/example.c', 
+		c_args: common_args,
+		dependencies: dlg_dep)
 	test('sample_c', sample_c)
 endif
 

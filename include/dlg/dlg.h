@@ -66,11 +66,15 @@ extern "C" {
 	#define DLG_FMT_FUNC dlg__printf_format
 #endif
 
-// Don't use this, only if you know what you are doing!
+// Only overwrite (i.e. predefine) this if you know what you are doing.
 // Could e.g. on windows when compiling with msvc and using a shared library of dlg
 // be set to __declspec(import)
 #ifndef DLG_API
-	#define DLG_API
+	#ifdef _MSC_VER
+		#define DLG_API __declspec(dllimport)
+	#else
+		#define DLG_API
+	#endif
 #endif
 
 // - utility -
