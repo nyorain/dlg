@@ -20,16 +20,27 @@ extern "C" {
 #endif
 
 // - CONFIG -
-// Define this macro to make all dlg macros have no effect at all
-// #define DLG_DISABLE
+// Define this macro as 1 to make all dlg macros have no effect at all
+#ifndef DLG_DISABLE
+		#define DLG_DISABLE 0
+#endif
 
 // the log/assertion levels below which logs/assertions are ignored
+// defaulted depending on the NDEBUG macro
 #ifndef DLG_LOG_LEVEL
-	#define DLG_LOG_LEVEL dlg_level_trace
+	#ifdef NDEBUG
+		#define DLG_LOG_LEVEL dlg_level_warn
+	#else
+		#define DLG_LOG_LEVEL dlg_level_trace
+	#endif
 #endif
 
 #ifndef DLG_ASSERT_LEVEL
-	#define DLG_ASSERT_LEVEL dlg_level_trace
+	#ifdef NDEBUG
+		#define DLG_ASSERT_LEVEL dlg_level_warn
+	#else
+		#define DLG_ASSERT_LEVEL dlg_level_trace
+	#endif
 #endif
 
 // the assert level of dlg_assert
@@ -117,7 +128,7 @@ struct dlg_origin {
 // Type of the output handler, see dlg_set_handler.
 typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, void* data);
 
-#ifdef DLG_DISABLE
+#if DLG_DISABLE
 	// Tagged/Untagged logging with variable level
 	// Tags must always be in the format `("tag1", "tag2")` (including brackets)
 	#define dlg_log(level, ...)
@@ -162,7 +173,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// The buffer should only be used by formatting functions.
 	// The buffer can be reallocated and the size changed, just make sure
 	// to update both values correctly.
-	inline char** dlg_thread_buffer(size_t** size) {}
+	inline char** dlg_thread_buffer(size_t** size) { return NULL; }
 
 	// Frees all thread-specific resources dlg allocated in the calling thread.
 	// When dlg is used again they will be reinitialized so this could e.g. be called

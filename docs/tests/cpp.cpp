@@ -36,6 +36,10 @@ int main() {
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
 	dlg_assertm(false, "should fire... {} {}", "!", 24);
+	
+	dlg_checkt(("checked"), {
+		dlg_info("from inside the check block");
+	});
 
 	dlg_cleanup();
 	return gerror;

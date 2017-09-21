@@ -1,6 +1,8 @@
 tests = [
   ['core', 'core.c'],
   ['cpp', 'cpp.cpp'],
+  ['disabledc', 'disabled.c'],
+  ['disabledcpp', 'disabled.cpp'],
 ]
 
 foreach test : tests

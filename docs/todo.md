@@ -14,7 +14,8 @@
 - [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
 - [x] c example
 	- [ ] Could be extended. Examples can generally be improved/reworked
-- [x] extend c testing (mainly tag setting scope)
+- [x] extend testing (mainly tag setting scope)
+	- test all macros (also disable and stuff)
 - [x] fix c++ example
 - [ ] release version 0.2.0
 - [ ] get stable (or make a list of what to do for 1.0)

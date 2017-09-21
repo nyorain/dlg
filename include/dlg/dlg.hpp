@@ -15,6 +15,17 @@
 	#define DLG_FMT_FUNC ::dlg::detail::tlformat
 #endif
 
+// Define this macro as 1 to disable all dlg_check* blocks.
+// Note that checking is defined separately from DLG_DISABLE.
+// By default this is defined to 1 if NDEBUG is defined OR DLG_DISABLe is 1.
+#ifndef DLG_DISABLE_CHECK
+	#if defined(NDEBUG) || DLG_DISABLE
+		#define DLG_DISABLE_CHECK 1
+	#else
+		#define DLG_DISABLE_CHECK 0
+	#endif
+#endif
+
 // The default string to replace by the dlg::*format functions.
 // Used as default by tlformat (set as new DLG_FMT_FUNC) or dlg::format.
 // If a custom replace string is required in certain situations without
@@ -61,7 +72,7 @@ protected:
 	const char* func_;
 };
 
-#ifdef DLG_DISABLE
+#if DLG_DISABLE
 	// Constructs a dlg::TagsGuard in the current scope, passing correctly the 
 	// current function, i.e. only dlg calls made from other functions
 	// that are called in the current scope will not use the given tags.
@@ -82,6 +93,19 @@ protected:
 	#define dlg_tags_global(...) \
 		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
 		::dlg::TagsGuard _dlggtg_(_dlgtags_.begin(), nullptr)
+#endif
+
+// TODO: move this to the c api? together with (a scoped version of) dlg_tags?
+#if DLG_DISABLE_CHECK
+	// Executes the given block only if dlg checking is enabled
+	#define dlg_check(code)
+	
+	// Executes the given blocks with the given tags only if dlg checking is enabled
+	// The tags must have the default `("tag1", "tag2")` format.
+	#define dlg_checkt(tags, code)
+#else
+	#define dlg_check(code) do code while(0)
+	#define dlg_checkt(tags, code) do { dlg_tags(tags); code } while(0)
 #endif
 
 /// Alternative output handler that allows to e.g. set lambdas or member functions.
