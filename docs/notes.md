@@ -6,6 +6,8 @@ Notes
 - The default of DLG_FILE (stripping DLG_BASE_PATH (if existent) from the current file)
   will not really compare DLG_BASE_PATH with the file name but just skip its length
 
+TODO: Add some examples on how tags could be used
+
 # Windows/msvc troubleshooting
 
 Windows and msvc are fully supported (and tested) by dlg.

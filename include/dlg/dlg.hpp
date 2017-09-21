@@ -115,7 +115,7 @@ using Handler = std::function<void(const struct dlg_origin& origin, const char* 
 // The handler should not throw, all exceptions (and non-exceptions) are caught
 // in a wrapper since they must not be passed through dlg (since it's c and dlg
 // might be called from c code).
-void set_handler(Handler handler);
+inline void set_handler(Handler handler);
 
 // TODO: maybe don't use exceptions for wrong formats?
 
@@ -136,7 +136,7 @@ void set_handler(Handler handler);
 ///  - gformat("$", "{} {}", std::setw(5), 2); -> "     2"
 template<typename Arg, typename... Args>
 void gformat(std::ostream& os, const char* replace, const char* fmt, Arg&& arg, Args&&... args);
-void gformat(std::ostream& os, const char* replace, const char* fmt);
+inline void gformat(std::ostream& os, const char* replace, const char* fmt);
 
 /// Simply calls gformat with a local stringstream and returns the stringstreams
 /// contents.
@@ -155,16 +155,15 @@ std::string format(const char* fmt, Args&&... args) {
 }
 
 /// Specialization of dlg_generic_output that returns a std::string.
-std::string generic_output(unsigned int features, 
+inline std::string generic_output(unsigned int features, 
 	const struct dlg_origin& origin, const char* string, 
 	const struct dlg_style styles[6] = dlg_default_output_styles);
-
 
 
 // - Private interface & implementation -
 namespace detail {
 	
-void handler_wrapper(const struct dlg_origin* origin, const char* str, void* data) {
+inline void handler_wrapper(const struct dlg_origin* origin, const char* str, void* data) {
 	auto& handler = *static_cast<Handler*>(data);
 	try {
 		handler(*origin, str);
@@ -201,7 +200,7 @@ protected:
 
 // Like std::strstr but only matches if target is not wrapped in backslashes,
 // otherwise prints the target.
-const char* find_next(std::ostream& os, const char*& src, const char* target) {
+inline const char* find_next(std::ostream& os, const char*& src, const char* target) {
 	auto len = std::strlen(target);
 	const char* next = std::strstr(src, target);
 	while(next && next > src && *(next - 1) == '\\' && *(next + len) == '\\') {
