@@ -8,7 +8,7 @@ int main() {
 	dlg_assertm(1 == 2, "Well, this assertion will probably %s...", "fail");
 	dlg_infot(("tag1", "tag2"), "We can tag our stuff. This can be used to filter/redirect messages");
 	dlg_asserttm(("tag3"), 3 == 2, "The same goes for asserts");
-	dlg_info("Another feature: Utf-8 printing works automatically for שׁǐŉďốẅś consoles");
+	dlg_info("Another feature: Utf-8 printing works automatically, even for שׁǐŉďốẅś consoles");
 	dlg_fatal("This one is printed bold. For more information, read the linked example above already");
 	dlg_cleanup();
 }

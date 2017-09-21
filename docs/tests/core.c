@@ -44,6 +44,9 @@ void foo_log();
 void foo_assert();
 
 int main() {
+	// make sure it works even if we dind't even use dlg
+	dlg_cleanup();
+
 	dlg_log(dlg_level_trace, "trace %d", 1);
 	dlg_log(dlg_level_debug, "debug %d", 1);
 	dlg_log(dlg_level_info, "info %d", 1);

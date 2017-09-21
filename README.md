@@ -13,9 +13,9 @@ well-documented logging interface in a few hundred lines*):
 
 There are 3 headers:
 
-- <dlg/dlg.h> (around 230 loc): Everything you need, no dependencies
-- <dlg/output.h> (around 150 loc): Utilities for implementing custom output handlers
-- <dlg/dlg.hpp> (around 250 loc): Modern C++11 utilities, alternative formatter
+- [<dlg/dlg.h>](include/dlg/dlg.h) (around 230 loc): Everything you need, no dependencies
+- [<dlg/output.h>](include/dlg/output.h) (around 150 loc): Utilities for implementing custom output handlers
+- [<dlg/dlg.hpp>](include/dlg/dlg.hpp) (around 250 loc): Modern C++11 utilities, alternative formatter
 
 You can either build dlg.c as library or include it directly into your project 
 (nothing else needed).
@@ -39,7 +39,7 @@ dlg_error("Errors are red. Colors work even on windows consoles");
 dlg_assertm(1 == 2, "Well, this assertion will probably %s...", "fail");
 dlg_infot(("tag1", "tag2"), "We can tag our stuff. This can be used to filter/redirect messages");
 dlg_asserttm(("tag3"), 3 == 2, "The same goes for asserts");
-dlg_info("Another feature: Utf-8 printing works automatically for שׁǐŉďốẅś consoles");
+dlg_info("Another feature: Utf-8 printing works automatically, even for שׁǐŉďốẅś consoles");
 dlg_fatal("This one is printed bold. For more information, read the linked example above already");
 dlg_cleanup(); // release one-time allocated resources, just to make our valgrind checks happy
 ```

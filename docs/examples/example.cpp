@@ -13,6 +13,7 @@
 
 #include <iostream> // since we manually use std::cout
 #include <fstream> // since we might write to a file later on
+#include <algorithm> // std::find
 
 int main()
 {
