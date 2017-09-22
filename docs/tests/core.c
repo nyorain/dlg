@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #define DLG_DEFAULT_ASSERT dlg_level_fatal
 #include <dlg/dlg.h>
 #include <dlg/output.h>
@@ -311,8 +315,8 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 
 	if(gdata.check & check_string) {
 		if((string == NULL) != (gdata.string == NULL)) {
-			printf("$$$ handler: Invalid string (ptr) %d, expected %d [%d]\n", 
-				(bool) string, (bool) gdata.string, origin->line);
+			printf("$$$ handler: Invalid string (validness) %d, expected %d [%d]\n", 
+				(string != NULL), (gdata.string != NULL), origin->line);
 		} else if(string && strcmp(string, gdata.string)) {
 			printf("$$$ handler: invalid string '%s' [%d]\n", string, origin->line);
 		}
@@ -321,7 +325,7 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 	if(gdata.check & check_expr) {
 		if((origin->expr == NULL) != (gdata.expr == NULL)) {
 			printf("$$$ handler: Invalid expr (ptr) %d, expected %d [%d]\n", 
-				(bool) origin->expr, (bool) gdata.expr, origin->line);
+				(origin->expr != NULL), (gdata.expr != NULL), origin->line);
 		} else if(origin->expr && strcmp(origin->expr, gdata.expr)) {
 			printf("$$$ handler: invalid expr '%s' [%d]\n", origin->expr, origin->line);
 		}

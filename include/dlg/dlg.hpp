@@ -188,7 +188,7 @@ public:
 			setp(buf_, buf_ + size_);
 		}
 		if(!traits_type::eq_int_type(ch, traits_type::eof())) {
-			*pptr() = ch;
+			*pptr() = (char_type) ch;
 		}
 		return buf_ ? 2 * traits_type::eof() : traits_type::eof();
 	}

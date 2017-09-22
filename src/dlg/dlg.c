@@ -2,10 +2,10 @@
 #include <dlg/output.h>
 #include <dlg/dlg.h>
 #include <wchar.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 const char* dlg_reset_sequence = "\033[0m";
 const struct dlg_style dlg_default_output_styles[] = {
@@ -87,7 +87,7 @@ static void* xrealloc(void* ptr, size_t size) {
 	
 	// TODO: does WriteConsoleW even work for buffers larger than 64 KB??
 	// Maybe just don't support it?
-	static void win_write_heap(void* handle, size_t needed, const char* format, va_list args) {
+	static void win_write_heap(void* handle, int needed, const char* format, va_list args) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
 		vsnprintf(buf1, needed + 1, format, args);
@@ -96,7 +96,7 @@ static void* xrealloc(void* ptr, size_t size) {
 		free(buf1);
 	}
 	
-	static void win_write_stack(void* handle, size_t needed, const char* format, va_list args) {
+	static void win_write_stack(void* handle, int needed, const char* format, va_list args) {
 		char buf1[DLG_MAX_STACK_BUF_SIZE];
 		wchar_t buf2[DLG_MAX_STACK_BUF_SIZE];
 		vsnprintf(buf1, needed + 1, format, args);
@@ -204,9 +204,16 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 	bool first_meta = true;
 	if(features & dlg_output_time) {
 		time_t t = time(NULL);
-		struct tm *tm_info = localtime(&t);
+		struct tm tm_info;
+		// TODO: check for error
+#ifdef DLG_OS_WIN
+		localtime_s(&tm_info, &t);
+#else
+		localtime_r(&t, &tm_info);
+#endif
+
 		char timebuf[32];
-		strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm_info);
+		strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
 		output(data, "%s", timebuf);
 		first_meta = false;
 	}
@@ -302,7 +309,9 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 		const struct dlg_origin* origin, const char* string, 
 		const struct dlg_style styles[6]) {
 	if(buf) {
-		struct buf mbuf = {buf, size};
+		struct buf mbuf;
+		mbuf.buf = buf;
+		mbuf.size = size;
 		dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
 	} else {
 		*size = 0;
@@ -352,8 +361,9 @@ bool dlg_win_init_ansi(void) {
 	
 	while(status == 1); // currently initialized in another thread, spinlock
 	return (status == 4);
-#endif
+#else
 	return true;
+#endif
 }
 
 // TODO: use size_t instead of unsigned int?
@@ -542,14 +552,13 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	}
 
 	vec_push(data->tags, NULL); // terminating NULL
-	struct dlg_origin origin = {
-		.level = lvl,
-		.file = file,
-		.line = line,
-		.func = func,
-		.expr = expr,
-		.tags = data->tags
-	};
+	struct dlg_origin origin;
+	origin.level = lvl;
+	origin.file = file;
+	origin.line = line;
+	origin.func = func;
+	origin.expr = expr;
+	origin.tags = data->tags;
 
 	g_handler(&origin, string, g_data);
 	vec_clear(data->tags);

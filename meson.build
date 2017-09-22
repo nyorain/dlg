@@ -27,7 +27,10 @@ dlg_args = []
 common_args = []
 if meson.get_compiler('c').get_id() == 'msvc'
 	dlg_args += '/DDLG_API=__declspec(dllexport)'
-	common_args += ['/utf-8', '/wd4100']
+
+	# make utf-8 examples work; ignore unused parameter and
+	# constant conditional expression warnings
+	common_args += ['/utf-8', '/wd4100', '/wd4127'] 
 else
 	common_args += '-Wno-unused-parameter'
 endif
