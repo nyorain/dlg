@@ -65,7 +65,9 @@ int main() {
 	expected = {};
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
-	dlg_assertm(false, "should fire... {} {}", "!", 24);
+
+	std::string str = "should fire... {} {}";
+	dlg_assertm(false, str, "!", 24);
 	
 	auto entered = false;
 	dlg_checkt(("checked"), {

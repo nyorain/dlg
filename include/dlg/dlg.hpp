@@ -111,10 +111,19 @@ protected:
 /// Alternative output handler that allows to e.g. set lambdas or member functions.
 using Handler = std::function<void(const struct dlg_origin& origin, const char* str)>;
 
-// Allows to set a std::function as dlg handler.
-// The handler should not throw, all exceptions (and non-exceptions) are caught
-// in a wrapper since they must not be passed through dlg (since it's c and dlg
-// might be called from c code).
+/// Small std::string_view replacement that allows taking std::string
+/// and const char* arguments
+struct StringParam {
+	StringParam(const std::string& s) : str(s.c_str()) {}
+	StringParam(const char* s) : str(s) {}
+
+	const char* str;
+};
+
+/// Allows to set a std::function as dlg handler.
+/// The handler should not throw, all exceptions (and non-exceptions) are caught
+/// in a wrapper since they must not be passed through dlg (since it's c and dlg
+/// might be called from c code).
 inline void set_handler(Handler handler);
 
 // TODO: maybe don't use exceptions for wrong formats?
@@ -135,13 +144,13 @@ inline void set_handler(Handler handler);
 ///  - gformat("$", "{}", 1, 2); -> std::invalid_argument, too many arguments
 ///  - gformat("$", "{} {}", std::setw(5), 2); -> "     2"
 template<typename Arg, typename... Args>
-void gformat(std::ostream& os, const char* replace, const char* fmt, Arg&& arg, Args&&... args);
-inline void gformat(std::ostream& os, const char* replace, const char* fmt);
+void gformat(std::ostream& os, StringParam replace, StringParam fmt, Arg&& arg, Args&&... args);
+inline void gformat(std::ostream& os, StringParam replace, StringParam fmt);
 
 /// Simply calls gformat with a local stringstream and returns the stringstreams
 /// contents.
 template<typename... Args>
-std::string rformat(const char* replace, const char* fmt, Args&&... args) {
+std::string rformat(StringParam replace, StringParam fmt, Args&&... args) {
 	std::stringstream sstream;
 	gformat(sstream, replace, fmt, std::forward<Args>(args)...);
 	return sstream.str();
@@ -150,13 +159,13 @@ std::string rformat(const char* replace, const char* fmt, Args&&... args) {
 /// Simply calls rformat with DLG_FORMAT_DEFAULT_REPLACE (defaulted to '{}') as
 /// replace string.
 template<typename... Args>
-std::string format(const char* fmt, Args&&... args) {
+std::string format(StringParam fmt, Args&&... args) {
 	return rformat(DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
 }
 
 /// Specialization of dlg_generic_output that returns a std::string.
 inline std::string generic_output(unsigned int features, 
-	const struct dlg_origin& origin, const char* string, 
+	const struct dlg_origin& origin, StringParam string, 
 	const struct dlg_style styles[6] = dlg_default_output_styles);
 
 
@@ -216,7 +225,7 @@ inline const char* find_next(std::ostream& os, const char*& src, const char* tar
 // Used as DLG_FMT_FUNC, uses a threadlocal stringstream to not allocate
 // a new buffer on every call
 template<typename... Args>
-const char* tlformat(const char* fmt, Args&&... args) {
+const char* tlformat(StringParam fmt, Args&&... args) {
 	std::size_t* size;
 	char** dbuf = dlg_thread_buffer(&size);
 	detail::StreamBuffer buf(*dbuf, *size);
@@ -228,24 +237,24 @@ const char* tlformat(const char* fmt, Args&&... args) {
 
 } // namespace detail
 
-void gformat(std::ostream& os, const char* replace, const char* fmt) {
-	if(detail::find_next(os, fmt, replace)) {
+void gformat(std::ostream& os, StringParam replace, StringParam fmt) {
+	if(detail::find_next(os, fmt.str, replace.str)) {
 		throw std::invalid_argument("Too few arguments given to format");
 	}
 
-	os << fmt;
+	os << fmt.str;
 }
 
 template<typename Arg, typename... Args>
-void gformat(std::ostream& os, const char* replace, const char* fmt, Arg&& arg, Args&&... args) {
-	const char* next = detail::find_next(os, fmt, replace);
+void gformat(std::ostream& os, StringParam replace, StringParam fmt, Arg&& arg, Args&&... args) {
+	const char* next = detail::find_next(os, fmt.str, replace.str);
 	if(!next) {
 		throw std::invalid_argument("Too many arguments to format supplied");
 	}
 
-	os.write(fmt, next - fmt); // XXX: could cause problems since unformatted?
+	os.write(fmt.str, next - fmt.str); // XXX: any drawback compared to formatted?
 	os << std::forward<Arg>(arg);
-	auto len = std::strlen(replace);
+	auto len = std::strlen(replace.str);
 	return gformat(os, replace, next + len, std::forward<Args>(args)...);
 }
 
@@ -256,11 +265,11 @@ void set_handler(Handler handler) {
 }
 
 std::string generic_output(unsigned int features, 
-		const struct dlg_origin& origin, const char* string, 
+		const struct dlg_origin& origin, StringParam string,
 		const struct dlg_style styles[6]) {
 	std::size_t size;	
 	dlg_generic_output_buf(nullptr, &size, features, &origin,
-		string, styles);
+		string.str, styles);
 	std::string ret(++size, ' ');
 	
 	// NOTE: this might (theoretically) cause problems before C++17
@@ -269,7 +278,7 @@ std::string generic_output(unsigned int features,
 	//  where it is guaranteed that this works (everybody is
 	//  using it anyways so shit will blow up if this fails)
 	dlg_generic_output_buf(&ret[0], &size, features, &origin,
-		string, styles);
+		string.str, styles);
 	return ret;
 }
 
