@@ -1,6 +1,9 @@
 project('dlg', ['c', 'cpp'],
 	version: '0.1.0',
-	default_options: ['c_std=c11', 'cpp_std=c++11', 'warnlevel=3'])
+	default_options: ['c_std=c11', 
+		'cpp_std=c++11', 
+		'warning_level=3',
+		'werror=true'])
 
 build_library = get_option('library')
 build_sample = get_option('sample')
@@ -12,7 +15,6 @@ sources = []
 libs = []
 
 source_root = meson.source_root().split('\\')
-
 add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', language: 'c')
 headers = files([
 	'include/dlg/output.h',
@@ -24,8 +26,10 @@ headers = files([
 dlg_args = []
 common_args = []
 if meson.get_compiler('c').get_id() == 'msvc'
-	dlg_args += '-DDLG_API=__declspec(dllexport)'
-	common_args += '/utf-8'
+	dlg_args += '/DDLG_API=__declspec(dllexport)'
+	common_args += ['/utf-8', '/wd4100']
+else
+	common_args += '-Wno-unused-parameter'
 endif
 
 # build library

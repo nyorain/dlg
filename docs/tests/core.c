@@ -1,3 +1,4 @@
+#define DLG_DEFAULT_ASSERT dlg_level_fatal
 #include <dlg/dlg.h>
 #include <dlg/output.h>
 #include <string.h>
@@ -200,7 +201,7 @@ int main() {
 	const char* t4[] = {"lt", "gt", NULL};
 	gdata.tags = t4;
 	gdata.fired = false;
-	dlg_add_tag("lt", __FUNCTION__);
+	dlg_add_tag("lt", __func__);
 	dlg_add_tag("gt", NULL);
 	dlg_info(".");
 	EXPECT(gdata.fired);
@@ -209,9 +210,9 @@ int main() {
 	// TODO: strictly speaking not correct but we know it works...
 	// both params should be same pointer to const char*
 	// this was done below the same (wrong) way...
-	EXPECT(dlg_remove_tag("lt", __FUNCTION__)); 
+	EXPECT(dlg_remove_tag("lt", __func__)); 
 	EXPECT(dlg_remove_tag("gt", NULL));
-	EXPECT(!dlg_remove_tag("gt", __FUNCTION__));
+	EXPECT(!dlg_remove_tag("gt", __func__));
 	EXPECT(!dlg_remove_tag("gt", NULL));
 
 	// default
@@ -229,12 +230,12 @@ int main() {
 	const char* t6[] = {"d1", "d2", "d3", "lt2", "gt2", "tag3", "tag4", NULL};
 	gdata.tags = t6;
 	gdata.fired = false;
-	dlg_add_tag("lt2", __FUNCTION__);
+	dlg_add_tag("lt2", __func__);
 	dlg_add_tag("gt2", NULL);
 	dlg_tracet(("tag3", "tag4"), ".");
 	dlg_assertt(("tag3", "tag4"), false);
 	EXPECT(gdata.fired);
-	EXPECT(dlg_remove_tag("lt2", __FUNCTION__));
+	EXPECT(dlg_remove_tag("lt2", __func__));
 	EXPECT(dlg_remove_tag("gt2", NULL));
 
 	#undef DLG_DEFAULT_TAGS
@@ -248,16 +249,16 @@ int main() {
 
 	// correct scope of added tags
 	const char* t7[] = {"gt3", NULL};
-	dlg_add_tag("lt3", __FUNCTION__);
+	dlg_add_tag("lt3", __func__);
 	dlg_add_tag("gt3", NULL);
 	gdata.fired = false;
 	gdata.tags = t7;
 	foo_log();
 	EXPECT(gdata.fired);
 	foo_assert();
-	EXPECT(dlg_remove_tag("lt3", __FUNCTION__));
+	EXPECT(dlg_remove_tag("lt3", __func__));
 	EXPECT(dlg_remove_tag("gt3", NULL));
-	EXPECT(!dlg_remove_tag("lt3", __FUNCTION__));
+	EXPECT(!dlg_remove_tag("lt3", __func__));
 	EXPECT(!dlg_remove_tag("non-existent", NULL));
 
 	// reset handler

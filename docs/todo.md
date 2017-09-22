@@ -19,7 +19,7 @@
 - [x] fix c++ example
 - [ ] release version 0.2.0
 - [ ] get stable (or make a list of what to do for 1.0)
-- [ ] add appveyor testing (for mingw as well as visual studio)
+- [x] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
 

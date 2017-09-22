@@ -14,6 +14,7 @@ unsigned int gerror = 0;
 }
 
 int main() {
+	// utility functions
 	EXPECT(dlg::rformat("$", "\\$\\") == "$");
 	EXPECT(dlg::rformat("$", "$\\", 0) == "0\\");
 	EXPECT(dlg::rformat("$", "\\$", 1) == "\\1");
@@ -23,29 +24,57 @@ int main() {
 	EXPECT(dlg::format("\\{}\\") == "{}");
 	EXPECT(dlg::format("\\{{}}\\", 2) == "\\{2}\\");
 
+	// check output
+	enum check {
+		check_line = 1,
+		check_tags = 2,
+		check_expr = 4,
+		check_string = 8,
+		check_level = 16,
+		check_fire = 32
+	};
+
+	struct {
+		unsigned int check;
+		const char* str;
+		bool fired;
+	} expected {};
+
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
+		expected.fired = true;
+		if(expected.check & check_string) {
+			if((str == nullptr) != (expected.str == nullptr) || 
+					(str && std::strcmp(str, expected.str) != 0)) {
+				std::printf("$$$ handler: invalid string [%d]\n", origin.line);
+				++gerror;
+			}
+		}
+
+		// output
 		dlg_win_init_ansi();
 		dlg_generic_output_stream(nullptr, ~0, &origin, str, dlg_default_output_styles);
 	});
 
 	{
 		dlg_tags("a", "b");
+		expected.check &= check_string;
+		expected.str = "Just some formatted info";
 		dlg_infot(("tag1", "tag2"), "Just some {} info", "formatted");
 	}
 	
+	expected = {};
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
 	dlg_assertm(false, "should fire... {} {}", "!", 24);
 	
+	auto entered = false;
 	dlg_checkt(("checked"), {
+		entered = true;
 		dlg_info("from inside the check block");
+		EXPECT(expected.fired);
 	});
+	EXPECT(entered);
 
 	dlg_cleanup();
 	return gerror;
 }
-
-// TODO: use or remove
-// #define DLG_ADD_TAGS(tags, ...) (DLG_MM_HELPER tags, __VA_ARGS__)
-// #define DLG_EVAL(...) __VA_ARGS__
-// #define ny_warn(...) dlg_warnt(("ny"), __VA_ARGS__)

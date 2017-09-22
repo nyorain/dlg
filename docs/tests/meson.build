@@ -1,5 +1,6 @@
 tests = [
   ['core', 'core.c'],
+  ['level', 'level.c'],
   ['cpp', 'cpp.cpp'],
   ['disabledc', 'disabled.c'],
   ['disabledcpp', 'disabled.cpp'],

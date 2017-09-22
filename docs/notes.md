@@ -5,8 +5,20 @@ Notes
  
 - The default of DLG_FILE (stripping DLG_BASE_PATH (if existent) from the current file)
   will not really compare DLG_BASE_PATH with the file name but just skip its length
+- Adding your project name as tag to all calls coming from your library is probably 
+  a good idea. It can either be done defining DLG_DEFAULT_TAGS e.g. from the 
+  build system (prefer this method).
+  Or add macros that add the tags like this (usually not a good idea):
 
-TODO: Add some examples on how tags could be used
+```c
+#define MY_ADD_TAGS(tags, ...) (MY_EVAL tags, __VA_ARGS__)
+#define MY_EVAL(...) __VA_ARGS__
+
+#define my_warn(...) dlg_warnt(("my"), __VA_ARGS__)
+#deinfe my_warnt(tags, ...) dlg_warnt(MY_ADD_TAGS(tags, "my"), __VA_ARGS__)
+```
+
+__TODO__: Add some examples on how tags could be used
 
 # Windows/msvc troubleshooting
 
@@ -27,7 +39,8 @@ things you have to keep in mind for dlg to work.
   function to escape backslashes correctly (as of 2017).
   
   DLG itself handles it this way:
-  ```meson
+
+```meson
 source_root = meson.source_root().split('\\')
 add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', language: 'c')
-  ```
+```
