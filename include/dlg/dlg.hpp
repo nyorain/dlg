@@ -36,6 +36,9 @@
 
 #include <dlg/dlg.h>
 #include <dlg/output.h>
+
+#include <algorithm>
+#include <string>
 #include <streambuf>
 #include <ostream>
 #include <functional>
@@ -190,11 +193,19 @@ public:
 		setp(buf, buf + size); // we will only read from it
 	}
 
+	~StreamBuffer() {
+		// make sure only the end has a null terminator
+		setp(std::remove(buf_, pptr(), '\0'), buf_ + size_);
+		sputc('\0');
+	}
+
 	int_type overflow(int_type ch = traits_type::eof()) override {
 		if(pptr() >= epptr()) {
+			// TODO: check for realloc error
 			buf_ = static_cast<char*>(std::realloc(buf_, size_ * 2 + 1));
 			size_ = buf_ ? size_ * 2 + 1 : 0;
-			setp(buf_, buf_ + size_);
+			auto off = pptr() - pbase();
+			setp(buf_ + off, buf_ + size_);
 		}
 		if(!traits_type::eq_int_type(ch, traits_type::eof())) {
 			*pptr() = (char_type) ch;
@@ -231,7 +242,6 @@ const char* tlformat(StringParam fmt, Args&&... args) {
 	detail::StreamBuffer buf(*dbuf, *size);
 	std::ostream output(&buf);
 	gformat(output, DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
-	output.put('\0'); // terminating null char since we will use the buffer as string
 	return *dlg_thread_buffer(nullptr);
 }
 

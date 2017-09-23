@@ -89,6 +89,7 @@ static struct dlg_data* dlg_create_data();
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
 	#define DEFINE_CONSOLEV2_PROPERTIES
+	#define _WIN32_WINNT 0x0600
 	#include <windows.h>
 	#include <io.h>
 
@@ -102,13 +103,15 @@ static struct dlg_data* dlg_create_data();
 
 	// TODO: error handling
 	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* Parameter, void** lpContext) {
-		*lpContext = FlsAlloc(dlg_free_data);
+		**((DWORD**) lpContext) = FlsAlloc(dlg_free_data);
+		return true;
 	}
 
 	static struct dlg_data* dlg_data(void) {
 		static INIT_ONCE init_once = INIT_ONCE_STATIC_INIT;
 		static DWORD fls = 0;
-		InitOnceExecuteOnce(&init_once, dlg_init_fls, NULL, &fls);    
+		DWORD* flsp = &fls;
+		InitOnceExecuteOnce(&init_once, dlg_init_fls, NULL, &flsp);    
 		void* data = FlsGetValue(fls);
 		if(!data) {
 			data = dlg_create_data();

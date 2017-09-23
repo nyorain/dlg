@@ -3,6 +3,7 @@
 #include <dlg/dlg.hpp>
 #include <dlg/output.h>
 #include <iomanip>
+#include <iostream>
 
 unsigned int gerror = 0;
 
@@ -23,6 +24,16 @@ int main() {
 	EXPECT(dlg::format("{{}}", 2) == "{2}");
 	EXPECT(dlg::format("\\{}\\") == "{}");
 	EXPECT(dlg::format("\\{{}}\\", 2) == "\\{2}\\");
+
+	std::string str;
+	str += 'a';
+	str += 'b';
+	str += 'c';
+	str += '\0';
+	str += 'd';
+	str += 'e';
+	str += 'f';
+	dlg_info("{} xyz", str);
 
 	// check output
 	enum check {
@@ -66,7 +77,7 @@ int main() {
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
 
-	std::string str = "should fire... {} {}";
+	str = "should fire... {} {}";
 	dlg_assertm(false, str, "!", 24);
 	
 	auto entered = false;
