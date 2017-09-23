@@ -1,5 +1,5 @@
 project('dlg', ['c', 'cpp'],
-	version: '0.1.0',
+	version: '0.2.0',
 	default_options: ['c_std=c11', 
 		'cpp_std=c++11', 
 		'warning_level=3',
@@ -45,6 +45,7 @@ if build_library
 		'src/dlg/dlg.c',
 		c_args: dlg_args + common_args,
 		dependencies: dep_threads,
+		install: true,
 		include_directories: inc)
 	libs = [dlg_lib]
 else
@@ -81,3 +82,13 @@ endif
 
 # install
 install_headers(headers, subdir: 'dlg')
+
+# pkgconfig
+pkg = import('pkgconfig')
+pkg.generate(
+	name: 'dlg',
+	filebase: 'dlg',
+	libraries: libs,
+	subdirs: ['.', 'dlg'],
+	version: meson.project_version(),
+	description: 'C/C++ logging and debug library')
