@@ -49,9 +49,6 @@ void foo_log();
 void foo_assert();
 
 int main() {
-	// make sure it works even if we dind't even use dlg
-	dlg_cleanup();
-
 	dlg_log(dlg_level_trace, "trace %d", 1);
 	dlg_log(dlg_level_debug, "debug %d", 1);
 	dlg_log(dlg_level_info, "info %d", 1);
@@ -91,9 +88,6 @@ int main() {
 	dlg_assertlm(dlg_level_error, true, "Should %s, %s", "not fire", "error");
 	dlg_assertlm(dlg_level_fatal, true, "Should %s, %s", "not fire", "fatal");
 	printf("----\n\n");
-
-	printf("- Calling cleanup -\n");
-	dlg_cleanup(); // should reinitialize after it
 
 	dlg_set_handler(&custom_handler, &gdata);
 	check_file = fopen("dlg_test_output.txt", "w");
@@ -285,7 +279,6 @@ int main() {
 	dlg_styled_fprintf(stdout, mstyle, u8"ầŝƒđĵšҝďƒĵqשׂęрốґμĝĺ ('%s' in dingus-evlish)\n", "it's some kind of evlish");
 
 	// return count of total errors
-	dlg_cleanup();
 	return gerror;
 }
 

@@ -10,5 +10,4 @@ int main() {
 	dlg_asserttm(("tag3"), 3 == 2, "The same goes for asserts");
 	dlg_info("Another feature: Utf-8 printing works automatically, even for שׁǐŉďốẅś consoles");
 	dlg_fatal("This one is printed bold. For more information, read the linked example above already");
-	dlg_cleanup();
 }

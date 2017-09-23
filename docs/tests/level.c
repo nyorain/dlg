@@ -61,6 +61,5 @@ int main()
 	EXPECT(gdata.fired);
 	gdata.fired = false;
 
-	dlg_cleanup();
 	return gerror;
 }

@@ -23,7 +23,5 @@ int main()
 	dlg_set_handler(custom_handler, NULL);
 	dlg_info("well, this is not printed");
 	EXPECT(!gdata.fired);
-
-	dlg_cleanup();
 	return gerror;
 }

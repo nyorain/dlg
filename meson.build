@@ -14,6 +14,7 @@ inc = include_directories('include')
 sources = []
 libs = []
 
+# base path, correctly escaped on windows
 source_root = meson.source_root().split('\\')
 add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', language: 'c')
 headers = files([
@@ -23,33 +24,39 @@ headers = files([
 ])
 
 # TODO: import args?
+# default warn settings
 dlg_args = []
 common_args = []
+deps = []
 if meson.get_compiler('c').get_id() == 'msvc'
 	dlg_args += '/DDLG_API=__declspec(dllexport)'
 
 	# make utf-8 examples work; ignore unused parameter and
-	# constant conditional expression warnings
-	common_args += ['/utf-8', '/wd4100', '/wd4127'] 
+	# constant conditional expression warnings and a plainly wrong warning
+	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090'] 
 else
 	common_args += '-Wno-unused-parameter'
 endif
 
 # build library
+dep_threads = dependency('threads')
 if build_library
 	dlg_lib = library('dlg',
 		'src/dlg/dlg.c',
 		c_args: dlg_args + common_args,
+		dependencies: dep_threads,
 		include_directories: inc)
 	libs = [dlg_lib]
 else
 	sources = ['src/dlg/dlg.c']
+	deps = [threads]
 endif
 
 # dependency
 dlg_dep = declare_dependency(
 	include_directories: inc,
 	link_with: libs,
+	dependencies: deps,
 	sources: sources)
 
 # sample

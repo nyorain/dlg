@@ -29,25 +29,62 @@ static void* xrealloc(void* ptr, size_t size) {
 	return ret;
 }
 
-// compiler-specific
-#ifdef _MSC_VER
-	#define DLG_THREAD_LOCAL __declspec(thread)
-	
-	// https://stackoverflow.com/questions/29075288/convert-const-char-to-void
-	// spoiler: microsoft is wrong once again
-	#pragma warning(disable : 4090) 
-#else
-	#define DLG_THREAD_LOCAL _Thread_local
-#endif
+struct dlg_tag_func_pair {
+	const char* tag;
+	const char* func;
+};
+
+struct dlg_data {
+	const char** tags; // vec
+	struct dlg_tag_func_pair* pairs; // vec
+	char* buffer;
+	size_t buffer_size;
+};
+
+static dlg_handler g_handler = dlg_default_output;
+static void* g_data = NULL;
+
+static void dlg_free_data(void* data);
+static struct dlg_data* dlg_create_data();
 
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
 	#include <unistd.h>
+	#include <pthread.h>
+
+	static pthread_key_t dlg_data_key;
+
+	static void dlg_main_cleanup() {
+		void* data = pthread_getspecific(dlg_data_key);
+		if(data) {
+			dlg_free_data(data);
+			pthread_setspecific(dlg_data_key, NULL);
+		}
+	}
+
+	static void init_data_key(void) {
+		pthread_key_create(&dlg_data_key, dlg_free_data);
+		atexit(dlg_main_cleanup);
+	}
+
+	static struct dlg_data* dlg_data(void) {
+		static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+		pthread_once(&key_once, init_data_key);
+
+		void* data = pthread_getspecific(dlg_data_key);
+		if(!data) {
+			data = dlg_create_data();
+			pthread_setspecific(dlg_data_key, data);
+		}
+
+		return (struct dlg_data*) data;
+	}
 	
 	bool dlg_is_tty(FILE* stream) {
 		return isatty(fileno(stream));
 	}
+
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
@@ -62,6 +99,24 @@ static void* xrealloc(void* ptr, size_t size) {
 	
 	// the max buffer size we will convert on the stack
 	#define DLG_MAX_STACK_BUF_SIZE 1024
+
+	// TODO: error handling
+	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* Parameter, void** lpContext) {
+		*lpContext = FlsAlloc(dlg_free_data);
+	}
+
+	static struct dlg_data* dlg_data(void) {
+		static INIT_ONCE init_once = INIT_ONCE_STATIC_INIT;
+		static DWORD fls = 0;
+		InitOnceExecuteOnce(&init_once, dlg_init_fls, NULL, &fls);    
+		void* data = FlsGetValue(fls);
+		if(!data) {
+			data = dlg_create_data();
+			FlsSetValue(fls, data);
+		}
+
+		return (struct dlg_data*) data;
+	}
 	
 	bool dlg_is_tty(FILE* stream) {
 		return _isatty(_fileno(stream));
@@ -85,8 +140,6 @@ static void* xrealloc(void* ptr, size_t size) {
 		return true;
 	}
 	
-	// TODO: does WriteConsoleW even work for buffers larger than 64 KB??
-	// Maybe just don't support it?
 	static void win_write_heap(void* handle, int needed, const char* format, va_list args) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
@@ -353,6 +406,7 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 
 bool dlg_win_init_ansi(void) {
 #ifdef DLG_OS_WIN
+	// TODO: use init once
 	static volatile LONG status = 0;
 	LONG res = InterlockedCompareExchange(&status, 1, 0);
 	if(res == 0) { // not initialized
@@ -417,38 +471,23 @@ static void* vec_do_add(void* vec, unsigned int size) {
 #define vec_clear(vec) (vec__raw(vec)[0] = 0)
 #define vec_last(vec) (vec[vec_size(vec) - 1])
 
-struct dlg_tag_func_pair {
-	const char* tag;
-	const char* func;
-};
-
-typedef const char* cstr;
-
-struct dlg_data {
-	const char** tags; // vec
-	struct dlg_tag_func_pair* pairs; // vec
-	char* buffer;
-	size_t buffer_size;
-};
-
-static struct dlg_data** dlg_get_data(void) {
-	// NOTE: maybe don't hardcode _Thead_local, depending on build config?
-	// or make it possible to use another keyword (for older/non-c11 compilers)
-	static DLG_THREAD_LOCAL struct dlg_data* data = NULL;
-	return &data;
+static struct dlg_data* dlg_create_data(void) {
+	struct dlg_data* data = xalloc(sizeof(struct dlg_data));
+	vec_init_reserve(data->tags, 0, 20);
+	vec_init_reserve(data->pairs, 0, 20);
+	data->buffer_size = 100;
+	data->buffer = xalloc(100);
+	return data;
 }
 
-static struct dlg_data* dlg_data(void) {
-	struct dlg_data** data = dlg_get_data();
-	if(!*data) {
-		*data = xalloc(sizeof(struct dlg_data));
-		vec_init_reserve((*data)->tags, 0, 20);
-		vec_init_reserve((*data)->pairs, 0, 20);
-		(*data)->buffer_size = 100;
-		(*data)->buffer = xalloc(100);
+static void dlg_free_data(void* ddata) {
+	struct dlg_data* data = (struct dlg_data*) ddata;
+	if(data) {
+		vec_free(data->pairs);
+		vec_free(data->tags);
+		free(data->buffer);
+		free(data);
 	}
-
-	return *data;
 }
 
 void dlg_add_tag(const char* tag, const char* func) {
@@ -478,23 +517,9 @@ char** dlg_thread_buffer(size_t** size) {
 	return &data->buffer;
 }
 
-static dlg_handler g_handler = dlg_default_output;
-static void* g_data = NULL;
-
 void dlg_set_handler(dlg_handler handler, void* data) {
 	g_handler = handler;
 	g_data = data;
-}
-
-void dlg_cleanup() {
-	struct dlg_data** data = dlg_get_data();
-	if(*data) {
-		vec_free((*data)->pairs);
-		vec_free((*data)->tags);
-		free((*data)->buffer);
-		free(*data);
-		*data = NULL;
-	}
 }
 
 const char* dlg__printf_format(const char* str, ...) {

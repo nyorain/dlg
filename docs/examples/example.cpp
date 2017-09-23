@@ -154,8 +154,4 @@ int main()
 	// some of the utility functions for outputting custom stuff
 	auto style = dlg_default_output_styles[dlg_level_trace];
 	dlg_styled_fprintf(stdout, style, "*tips fedora and flies away*\n");
-
-	// when you are done with dlg (or even if you just want to cleanup
-	// and might use it again, use dlg_cleanup() or you might leak some resources).
-	dlg_cleanup();
 }

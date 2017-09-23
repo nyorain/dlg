@@ -39,7 +39,6 @@ dlg_infot(("tag1", "tag2"), "We can tag our stuff. This can be used to filter/re
 dlg_asserttm(("tag3"), 3 == 2, "The same goes for asserts");
 dlg_info("Another feature: Utf-8 printing works automatically, even for שׁǐŉďốẅś consoles");
 dlg_fatal("This one is printed bold. For more information, read the linked example above already");
-dlg_cleanup(); // release one-time allocated resources, just to make our valgrind checks happy
 ```
 
 Nontheless a rather beautiful picture of dlg in action for you. It is probably rather nonsensical without

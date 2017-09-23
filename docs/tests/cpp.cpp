@@ -77,6 +77,5 @@ int main() {
 	});
 	EXPECT(entered);
 
-	dlg_cleanup();
 	return gerror;
 }
