@@ -237,11 +237,14 @@ inline const char* find_next(std::ostream& os, const char*& src, const char* tar
 // a new buffer on every call
 template<typename... Args>
 const char* tlformat(StringParam fmt, Args&&... args) {
-	std::size_t* size;
-	char** dbuf = dlg_thread_buffer(&size);
-	detail::StreamBuffer buf(*dbuf, *size);
-	std::ostream output(&buf);
-	gformat(output, DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
+	{
+		std::size_t* size;
+		char** dbuf = dlg_thread_buffer(&size);
+		detail::StreamBuffer buf(*dbuf, *size);
+		std::ostream output(&buf);
+		gformat(output, DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
+	}
+	
 	return *dlg_thread_buffer(nullptr);
 }
 

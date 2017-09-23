@@ -1,4 +1,6 @@
 #define _XOPEN_SOURCE
+#define _WIN32_WINNT 0x0600
+
 #include <dlg/output.h>
 #include <dlg/dlg.h>
 #include <wchar.h>
@@ -89,7 +91,6 @@ static struct dlg_data* dlg_create_data();
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
 	#define DEFINE_CONSOLEV2_PROPERTIES
-	#define _WIN32_WINNT 0x0600
 	#include <windows.h>
 	#include <io.h>
 
@@ -101,17 +102,21 @@ static struct dlg_data* dlg_create_data();
 	// the max buffer size we will convert on the stack
 	#define DLG_MAX_STACK_BUF_SIZE 1024
 
+	static void WINAPI dlg_fls_destructor(void* data) {
+		dlg_free_data(data);
+	}
+
 	// TODO: error handling
 	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* Parameter, void** lpContext) {
-		**((DWORD**) lpContext) = FlsAlloc(dlg_free_data);
+		**((DWORD**) lpContext) = FlsAlloc(dlg_fls_destructor);
 		return true;
 	}
 
 	static struct dlg_data* dlg_data(void) {
 		static INIT_ONCE init_once = INIT_ONCE_STATIC_INIT;
 		static DWORD fls = 0;
-		DWORD* flsp = &fls;
-		InitOnceExecuteOnce(&init_once, dlg_init_fls, NULL, &flsp);    
+		void* flsp = (void*) &fls;
+		InitOnceExecuteOnce(&init_once, dlg_init_fls, NULL, &flsp);
 		void* data = FlsGetValue(fls);
 		if(!data) {
 			data = dlg_create_data();
@@ -425,11 +430,13 @@ bool dlg_win_init_ansi(void) {
 
 // TODO: use size_t instead of unsigned int?
 // small dynamic vec/array implementation
+// Since the macros vec_init and vec_add[c]/vec_push might
+// change the pointers value it must not be referenced somewhere else.
 #define vec__raw(vec) (((unsigned int*) vec) - 2)
 
 static void* vec_do_create(unsigned int typesize, unsigned int cap, unsigned int size) {
 	cap = (size > cap) ? size : cap;
-	unsigned int* begin = xalloc(2 * sizeof(unsigned int) + 2 * cap * typesize);
+	unsigned int* begin = xalloc(2 * sizeof(unsigned int) + cap * typesize);
 	begin[0] = size * typesize;
 	begin[1] = cap * typesize;
 	return begin + 2;
@@ -443,16 +450,16 @@ static void vec_do_erase(void* vec, unsigned int pos, unsigned int size) {
 	memcpy(buf + pos, buf + pos + size, size);
 }
 
-static void* vec_do_add(void* vec, unsigned int size) {
-	unsigned int* begin = vec__raw(vec);
+static void* vec_do_add(void** vec, unsigned int size) {
+	unsigned int* begin = vec__raw(*vec);
 	unsigned int needed = begin[0] + size;
 	if(needed >= begin[1]) {
 		begin = xrealloc(begin, sizeof(unsigned int) * 2 + needed * 2);
 		begin[1] = needed * 2;
-		vec = begin + 2;
+		(*vec) = begin + 2;
 	}
 
-	void* ptr = (char*) vec + begin[0];
+	void* ptr = ((char*) (*vec)) + begin[0];
 	begin[0] += size;
 	return ptr;
 }
@@ -461,14 +468,14 @@ static void* vec_do_add(void* vec, unsigned int size) {
 #define vec_create_reserve(type, size, capacity) (type*) vec_do_create(sizeof(type), capcity, size)
 #define vec_init(array, size) array = vec_do_create(sizeof(*array), size * 2, size)
 #define vec_init_reserve(array, size, capacity) array = vec_do_create(sizeof(*array), capacity, size)
-#define vec_free(vec) free((vec) ? vec__raw(vec) : NULL)
+#define vec_free(vec) (free((vec) ? vec__raw(vec) : NULL), vec = NULL)
 #define vec_erase_range(vec, pos, count) vec_do_erase(vec, pos * sizeof(*vec), count * sizeof(*vec))
 #define vec_erase(vec, pos) vec_do_erase(vec, pos * sizeof(*vec), sizeof(*vec))
-#define vec_size(vec) vec__raw(vec)[0] / sizeof(*vec)
-#define vec_capacity(vec) vec_raw(vec)[1] / sizeof(*vec)
-#define vec_add(vec) vec_do_add(vec, sizeof(*vec))
-#define vec_addc(vec, count) (vec_do_add(vec, sizeof(*vec) * count))
-#define vec_push(vec, value) (vec_do_add(vec, sizeof(*vec)), vec_last(vec) = (value))
+#define vec_size(vec) (vec__raw(vec)[0] / sizeof(*vec))
+#define vec_capacity(vec) (vec_raw(vec)[1] / sizeof(*vec))
+#define vec_add(vec) vec_do_add((void**) &vec, sizeof(*vec))
+#define vec_addc(vec, count) (vec_do_add((void**) &vec, sizeof(*vec) * count))
+#define vec_push(vec, value) (vec_do_add((void**) &vec, sizeof(*vec)), vec_last(vec) = (value))
 #define vec_pop(vec) (vec__raw(vec)[0] -= sizeof(*vec))
 #define vec_popc(vec, count) (vec__raw(vec)[0] -= sizeof(*vec) * count)
 #define vec_clear(vec) (vec__raw(vec)[0] = 0)
@@ -479,7 +486,7 @@ static struct dlg_data* dlg_create_data(void) {
 	vec_init_reserve(data->tags, 0, 20);
 	vec_init_reserve(data->pairs, 0, 20);
 	data->buffer_size = 100;
-	data->buffer = xalloc(100);
+	data->buffer = xalloc(data->buffer_size);
 	return data;
 }
 
