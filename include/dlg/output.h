@@ -73,7 +73,8 @@ enum dlg_output_feature {
 	dlg_output_time = 2, // output time of log call (hour:minute:second)
 	dlg_output_style = 4, // whether to use the supplied styles
 	dlg_output_func = 8, // output function
-	dlg_output_file_line = 16, // output file:line
+	dlg_output_file_line = 16, // output file:line,
+	dlg_output_newline = 32 // output a newline at the end
 };
 
 // The default level-dependent output styles. The array values represent the styles

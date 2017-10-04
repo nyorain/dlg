@@ -335,9 +335,9 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 		output(data, "%s", dlg_reset_sequence);
 	}
 
-	// TODO: really output this newline?
-	// maybe someones wants to print multiple outputs in one line?
-	output(data, "\n");
+	if(features & dlg_output_newline) {
+		output(data, "\n");
+	}
 }
 
 struct buf {
@@ -403,7 +403,7 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
 	
-	unsigned int features = dlg_output_file_line;
+	unsigned int features = dlg_output_file_line | dlg_output_newline;
 	if(dlg_is_tty(stream) && dlg_win_init_ansi()) {
 		features |= dlg_output_style;
 	}

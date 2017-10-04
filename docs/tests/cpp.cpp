@@ -4,6 +4,7 @@
 #include <dlg/output.h>
 #include <iomanip>
 #include <iostream>
+#include <cstdio>
 
 unsigned int gerror = 0;
 
@@ -24,6 +25,19 @@ int main() {
 	EXPECT(dlg::format("{{}}", 2) == "{2}");
 	EXPECT(dlg::format("\\{}\\") == "{}");
 	EXPECT(dlg::format("\\{{}}\\", 2) == "\\{2}\\");
+
+	// TODO: more output.h testing
+	{
+		dlg_origin origin {};
+
+		size_t size;
+		dlg_generic_output_buf(nullptr, &size, 0, &origin,
+			"test", dlg_default_output_styles);
+		EXPECT(size == 4u);
+
+		auto str = dlg::generic_output(0, origin, "test string");
+		EXPECT(str == "test string");
+	}
 
 	std::string str;
 	str += 'a';

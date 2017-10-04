@@ -292,6 +292,7 @@ std::string generic_output(unsigned int features,
 	//  using it anyways so shit will blow up if this fails)
 	dlg_generic_output_buf(&ret[0], &size, features, &origin,
 		string.str, styles);
+	ret.pop_back(); // terminating null-char
 	return ret;
 }
 

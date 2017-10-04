@@ -113,7 +113,7 @@ int main()
 		// and also gives us utf-8 console output support on windows.
 		// We could print more stuff (like tags/time, see dlg/output.h) but stick
 		// with some clean defaults here
-		unsigned int features = dlg_output_file_line;
+		unsigned int features = dlg_output_file_line | dlg_output_newline;
 		features |= use_color ? dlg_output_style : 0;
 		(*os) << dlg::generic_output(features, origin, msg);
 	});

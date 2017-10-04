@@ -276,7 +276,7 @@ int main() {
 
 	printf(" - The following line should be bold red, using utf-8 chars\n");
 	struct dlg_style mstyle = { .style = dlg_text_style_bold, .fg = dlg_color_red, .bg = dlg_color_none };
-	dlg_styled_fprintf(stdout, mstyle, u8"ầŝƒđĵšҝďƒĵqשׂęрốґμĝĺ ('%s' in dingus-evlish)\n", "it's some kind of evlish");
+	dlg_styled_fprintf(stdout, mstyle, u8"ầŝƒđĵšҝďƒĵqשׂęрốґμĝĺ (<%s> in dingus-evlish)\n", "it's some kind of evlish");
 
 	// return count of total errors
 	return gerror;
