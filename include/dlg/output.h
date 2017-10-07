@@ -67,14 +67,16 @@ DLG_API void dlg_vfprintf(FILE* stream, const char* format, va_list list);
 DLG_API void dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
 	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
 	
-// Features to output from the generic output handler
+// Features to output from the generic output handler.
+// Some features might have only an effect in the specializations.
 enum dlg_output_feature {
 	dlg_output_tags = 1, // output tags list
 	dlg_output_time = 2, // output time of log call (hour:minute:second)
 	dlg_output_style = 4, // whether to use the supplied styles
 	dlg_output_func = 8, // output function
 	dlg_output_file_line = 16, // output file:line,
-	dlg_output_newline = 32 // output a newline at the end
+	dlg_output_newline = 32, // output a newline at the end
+	dlg_output_threadsafe = 64 // output to stream in a threadsafe manner
 };
 
 // The default level-dependent output styles. The array values represent the styles
@@ -96,6 +98,8 @@ DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data,
 // for custom output handlers (that don't want to manually format the output).
 // If stream is NULL uses stdout for level < warn, stderr otherwise.
 // Automatically uses dlg_fprintf to assure correct utf-8 even on windows consoles.
+// Locks the stream (i.e. assures threadsafe access) when the associated feature
+// is passed.
 DLG_API void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	const struct dlg_origin* origin, const char* string, 
 	const struct dlg_style styles[6]);

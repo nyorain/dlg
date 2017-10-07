@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE
+#define _POSIX_C_SOURCE 199309L
 #define _WIN32_WINNT 0x0600
 
 #include <dlg/output.h>
@@ -393,8 +394,24 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	if(!stream) {
 		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
+
+	if(features & dlg_output_threadsafe) {
+#ifdef DLG_OS_WIN
+		_lock_file(stream);
+#else
+		flockfile(stream);
+#endif
+	}
 	
 	dlg_generic_output(print_stream, stream, features, origin, string, styles);
+
+	if(features & dlg_output_threadsafe) {
+#ifdef DLG_OS_WIN
+		_unlock_file(stream);
+#else
+		funlockfile(stream);
+#endif
+	}
 }
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
@@ -403,7 +420,8 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
 	}
 	
-	unsigned int features = dlg_output_file_line | dlg_output_newline;
+	unsigned int features = dlg_output_file_line | dlg_output_newline 
+		| dlg_output_threadsafe;
 	if(dlg_is_tty(stream) && dlg_win_init_ansi()) {
 		features |= dlg_output_style;
 	}

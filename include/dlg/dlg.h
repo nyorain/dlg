@@ -153,7 +153,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// The default output handler.
 	// Only use this to reset the output handler, prefer to use 
 	// dlg_generic_output (from output.h) which this function simply calls.
-	// It also flushes the stream used.
+	// It also flushes the stream used and correctly outputs even from multiple threads.
 	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {}
 
 	// Adds the given tag associated with the given function to the thread specific list.
