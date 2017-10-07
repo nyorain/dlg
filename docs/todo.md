@@ -22,6 +22,7 @@
 - [x] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
+- [ ] return int from dlg printf wrappers
 
 ### Make probably no sense:
 

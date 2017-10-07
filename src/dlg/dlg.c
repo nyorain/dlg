@@ -1,5 +1,4 @@
 #define _XOPEN_SOURCE
-#define _POSIX_C_SOURCE 199309L
 #define _WIN32_WINNT 0x0600
 
 #include <dlg/output.h>
@@ -83,6 +82,14 @@ static struct dlg_data* dlg_create_data();
 
 		return (struct dlg_data*) data;
 	}
+
+	static void lock_file(FILE* file) {
+		flockfile(file);
+	}
+
+	static void unlock_file(FILE* file) {
+		funlockfile(file);
+	}
 	
 	bool dlg_is_tty(FILE* stream) {
 		return isatty(fileno(stream));
@@ -125,6 +132,14 @@ static struct dlg_data* dlg_create_data();
 		}
 
 		return (struct dlg_data*) data;
+	}
+
+	static void lock_file(FILE* file) {
+		_lock_file(file);
+	}
+
+	static void unlock_file(FILE* file) {
+		_unlock_file(file);
 	}
 	
 	bool dlg_is_tty(FILE* stream) {
@@ -384,6 +399,7 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 static void print_stream(void* stream, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
+	// TODO: check for -1? we only use our own formats here
 	dlg_vfprintf(stream, format, args);
 	va_end(args);
 }
@@ -391,37 +407,22 @@ static void print_stream(void* stream, const char* format, ...) {
 void dlg_generic_output_stream(FILE* stream, unsigned int features,
 		const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
-	if(!stream) {
-		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
-	}
-
+	stream = stream ? stream : stdout;
 	if(features & dlg_output_threadsafe) {
-#ifdef DLG_OS_WIN
-		_lock_file(stream);
-#else
-		flockfile(stream);
-#endif
+		lock_file(stream);
 	}
 	
 	dlg_generic_output(print_stream, stream, features, origin, string, styles);
 
 	if(features & dlg_output_threadsafe) {
-#ifdef DLG_OS_WIN
-		_unlock_file(stream);
-#else
-		funlockfile(stream);
-#endif
+		unlock_file(stream);
 	}
 }
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
-	FILE* stream = data;
-	if(!stream) {
-		stream = (origin->level < dlg_level_warn) ? stdout : stderr;
-	}
-	
-	unsigned int features = dlg_output_file_line | dlg_output_newline 
-		| dlg_output_threadsafe;
+	FILE* stream = data ? data : stdout;
+	unsigned int features = dlg_output_file_line | dlg_output_newline |
+		dlg_output_threadsafe;
 	if(dlg_is_tty(stream) && dlg_win_init_ansi()) {
 		features |= dlg_output_style;
 	}
