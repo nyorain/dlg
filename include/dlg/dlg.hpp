@@ -201,16 +201,23 @@ public:
 
 	int_type overflow(int_type ch = traits_type::eof()) override {
 		if(pptr() >= epptr()) {
-			// TODO: check for realloc error
-			buf_ = static_cast<char*>(std::realloc(buf_, size_ * 2 + 1));
-			size_ = buf_ ? size_ * 2 + 1 : 0;
-			auto off = pptr() - pbase();
+			auto off = pptr() - buf_;
+			size_ = size_ * 2 + 1;
+			buf_ = static_cast<char*>(std::realloc(buf_, size_));
+			if(!buf_) {
+				size_ = 0;
+				setp(nullptr, nullptr);
+				return traits_type::eof();
+			}
+
 			setp(buf_ + off, buf_ + size_);
 		}
+		
 		if(!traits_type::eq_int_type(ch, traits_type::eof())) {
 			*pptr() = (char_type) ch;
 		}
-		return buf_ ? 2 * traits_type::eof() : traits_type::eof();
+
+		return 0;
 	}
 
 protected:
