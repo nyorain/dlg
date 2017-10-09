@@ -1,4 +1,5 @@
 #define _XOPEN_SOURCE
+#define _POSIX_C_SOURCE 201710L
 #define _WIN32_WINNT 0x0600
 
 #include <dlg/output.h>
