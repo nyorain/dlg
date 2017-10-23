@@ -26,6 +26,13 @@ int main() {
 	EXPECT(dlg::format("\\{}\\") == "{}");
 	EXPECT(dlg::format("\\{{}}\\", 2) == "\\{2}\\");
 
+	std::string a;
+	for(auto i = 0; i < 1000; ++i) {
+		a += std::to_string(i);
+	}
+
+	EXPECT(dlg::detail::tlformat("{}", a) == a);
+
 	// TODO: more output.h testing
 	{
 		dlg_origin origin {};

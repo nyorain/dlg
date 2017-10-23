@@ -215,6 +215,7 @@ public:
 		
 		if(!traits_type::eq_int_type(ch, traits_type::eof())) {
 			*pptr() = (char_type) ch;
+			pbump(1);
 		}
 
 		return 0;
