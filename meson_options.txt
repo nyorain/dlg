@@ -1,3 +1,31 @@
-option('library', type: 'boolean', value : true) # otherwise adds the c file as dependency
+# whether to build dlg thread-aware
+# if true, each thread using dlg will have its own threadlocal dlg data
+# if false, calling dlg functions from multiple threads will result
+#  in undefined behvaior.
+# The cost of enabling this is a threadlocal pointer (and per-thread allocations)
+# Does not pull in pthreads or any other dependency, just uses thread local data.
+option('threaded', type: 'boolean', value: true)
+
+# whether to automatically cleanup all resources allocated by dlg when the
+# program is shut down. Since they are one-time allocations and no
+# 'real leaks' this is not really needed. If false, some dlg
+# allocations would e.g. occur as 'still reachable' in valgrind
+# on program termination.
+# The cost of enabling this is an atexit registration.
+# If 'threaded' and this option is true, will additionally pull in a
+# thread library dependency (i.e. pthreads on posix) and use
+# a destructor per thread (pthread_key, FlsAlloc).
+option('autocleanup', type: 'boolean', value: false)
+
+# Whether to build a library. If this is false, will not build
+# anything (except sample/tests if enabled) but simply add the
+# single source file into the declared meson dependency.
+# Makes no sense if used to install dlg on a system, might
+# be useful as subproject.
+option('library', type: 'boolean', value : true)
+
+# Whether to build the samples
 option('sample', type: 'boolean', value: false)
+
+# Whether to build (and register) the tests
 option('tests', type: 'boolean', value: false)

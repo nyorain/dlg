@@ -2,6 +2,8 @@
 #define _POSIX_C_SOURCE 201710L
 #define _WIN32_WINNT 0x0600
 
+TODO: use DLG_THREADED (see meson_options.txt)
+
 #include <dlg/output.h>
 #include <dlg/dlg.h>
 #include <wchar.h>
@@ -42,6 +44,14 @@ struct dlg_data {
 	struct dlg_tag_func_pair* pairs; // vec
 	char* buffer;
 	size_t buffer_size;
+
+#ifdef DLG_NO_AUTO_CLEANUP
+	// we keep pointers to the vector base pointers to
+	// make sure leak checkers don't list them as 'possibly lost' but
+	// as still reachable
+	void* pairs_raw;
+	void* tags_raw;
+#endif
 };
 
 static dlg_handler g_handler = dlg_default_output;
@@ -50,12 +60,23 @@ static void* g_data = NULL;
 static void dlg_free_data(void* data);
 static struct dlg_data* dlg_create_data();
 
+#ifdef DLG_NO_AUTO_CLEANUP
+	static struct dlg_data* dlg_data(void) {
+		static DLG_THREAD_LOCAL struct dlg_data* data;
+		if(!data) {
+			data = dlg_create_data();
+		}
+		return data;
+	}
+#endif
+
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
 	#define DLG_OS_UNIX
 	#include <unistd.h>
-	#include <pthread.h>
 
+#ifndef DLG_NO_AUTO_CLEANUP
+	#include <pthread.h>
 	static pthread_key_t dlg_data_key;
 
 	static void dlg_main_cleanup() {
@@ -83,6 +104,7 @@ static struct dlg_data* dlg_create_data();
 
 		return (struct dlg_data*) data;
 	}
+#endif
 
 	static void lock_file(FILE* file) {
 		flockfile(file);
@@ -115,6 +137,7 @@ static struct dlg_data* dlg_create_data();
 		dlg_free_data(data);
 	}
 
+#ifndef DLG_NO_AUTO_CLEANUP
 	// TODO: error handling
 	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* Parameter, void** lpContext) {
 		**((DWORD**) lpContext) = FlsAlloc(dlg_fls_destructor);
@@ -134,6 +157,7 @@ static struct dlg_data* dlg_create_data();
 
 		return (struct dlg_data*) data;
 	}
+#endif
 
 	static void lock_file(FILE* file) {
 		_lock_file(file);
@@ -507,6 +531,12 @@ static struct dlg_data* dlg_create_data(void) {
 	vec_init_reserve(data->pairs, 0, 20);
 	data->buffer_size = 100;
 	data->buffer = xalloc(data->buffer_size);
+
+#ifdef DLG_NO_AUTO_CLEANUP
+	data->tags_raw = vec__raw(data->tags);
+	data->pairs_raw = vec__raw(data->pairs);
+#endif
+
 	return data;
 }
 
@@ -617,6 +647,11 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 
 	g_handler(&origin, string, g_data);
 	vec_clear(data->tags);
+
+#ifdef DLG_NO_AUTO_CLEANUP
+	data->tags_raw = vec__raw(data->tags);
+	data->pairs_raw = vec__raw(data->pairs);
+#endif
 }
 
 const char* dlg__strip_root_path(const char* file, const char* base) {
@@ -642,6 +677,10 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 	}
 
 	return file;
+}
+
+void dlg_cleanup(void) {
+	dlg_free_data(dlg_data());
 }
 
 // TODO: not sure if it is a good idea to add them

@@ -175,6 +175,10 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// to update both values correctly.
 	inline char** dlg_thread_buffer(size_t** size) { return NULL; }
 
+	/// Can be called at any time, will free all dlg resources in the calling
+	/// thread. They will automatically be reinitialized when needed.
+	inline void dlg_cleanup(void) {}
+
 #else // DLG_DISABLE
 	#define dlg_log(level, ...) if(level >= DLG_LOG_LEVEL) \
 		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__,  \
@@ -199,6 +203,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	DLG_API void dlg_add_tag(const char* tag, const char* func);
 	DLG_API bool dlg_remove_tag(const char* tag, const char* func);
 	DLG_API char** dlg_thread_buffer(size_t** size);
+	DLG_API void dlg_cleanup(void);
 
 	// - Private interface: not part of the abi/api but needed in macros -
 	// Formats the given format string and arguments as printf would, uses the thread buffer.

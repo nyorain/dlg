@@ -23,6 +23,7 @@
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
 - [ ] return int from dlg printf wrappers
+- [ ] consider exposing dlg_(un)lock_file in output.h
 
 ### Make probably no sense:
 

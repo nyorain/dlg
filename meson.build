@@ -5,6 +5,9 @@ project('dlg', ['c', 'cpp'],
 		'warning_level=3',
 		'werror=true'])
 
+threaded = get_option('threaded')
+autocleanup = get_option('autocleanup')
+
 build_library = get_option('library')
 build_sample = get_option('sample')
 tests = get_option('tests')
@@ -23,7 +26,7 @@ headers = files([
 	'include/dlg/dlg.hpp'
 ])
 
-# TODO: import args?
+# TODO: import DLG_API args?
 # default warn settings
 dlg_args = []
 common_args = []
@@ -31,20 +34,42 @@ deps = []
 if meson.get_compiler('c').get_id() == 'msvc'
 	dlg_args += '/DDLG_API=__declspec(dllexport)'
 
+	if threaded
+		dlg_args += '/DDLG_THREAD_LOCAL=__declspec(thread)'
+		dlg_args += '/DDLG_THREADED=1'
+	else
+		dlg_args += '/DDLG_THREAD_LOCAL='
+	endif
+
 	# make utf-8 examples work; ignore unused parameter and
 	# constant conditional expression warnings and a plainly wrong warning
 	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090'] 
 else
 	common_args += '-Wno-unused-parameter'
+
+	if threaded
+		dlg_args += '-DDLG_THREAD_LOCAL=_Thread_local'
+		dlg_args += '-DDLG_THREADED=1'
+	else
+		dlg_args += '-DDLG_THREAD_LOCAL='
+	endif
+endif
+
+# autocleanup
+dep_threads = dependency('threads')
+deps_lib = []
+if not autocleanup
+	dlg_args += '-DDLG_NO_AUTO_CLEANUP=1'
+elif threaded
+	deps_lib += dep_threads
 endif
 
 # build library
-dep_threads = dependency('threads')
 if build_library
 	dlg_lib = library('dlg',
 		'src/dlg/dlg.c',
 		c_args: dlg_args + common_args,
-		dependencies: dep_threads,
+		dependencies: deps_lib,
 		install: true,
 		include_directories: inc)
 	libs = [dlg_lib]
