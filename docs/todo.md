@@ -1,5 +1,10 @@
 # Ideas and todo
 
+- [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
+	- [ ] Also custom assertion handler? that is called inline and might throw?
+- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
+- [ ] update picture for tags (and C) update
+- [ ] return int from dlg printf wrappers
 - [x] windows utf-8 output (see ny)
 - [x] windows text style support
 - [x] assert without error message
@@ -7,22 +12,17 @@
 - [x] custom (changeable) base paths (for nested projects/header calls) __[DLG_FILE]__
 - [x] possibility to get current scope (or more general: exception support)
 - [x] make default scope signs customizable by macro
-- [ ] update picture for tags (and C) update
 - [x] unit tests (at least some basic stuff) + ci (travis)
-- [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
-	- [ ] Also custom assertion handler? that is called inline and might throw?
-- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
 - [x] c example
 	- [ ] Could be extended. Examples can generally be improved/reworked
 - [x] extend testing (mainly tag setting scope)
 	- test all macros (also disable and stuff)
 - [x] fix c++ example
-- [ ] release version 0.2.0
-- [ ] get stable (or make a list of what to do for 1.0)
+- [x] release version 0.2.0
 - [x] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
-- [ ] return int from dlg printf wrappers
+- [ ] get stable (or make a list of what to do for 1.0)
 
 ### Make probably no sense:
 
