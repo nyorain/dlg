@@ -5,6 +5,18 @@
 #ifndef _DLG_DLG_HPP_
 #define _DLG_DLG_HPP_
 
+#include <dlg/dlg.h>
+#include <dlg/output.h>
+
+#include <algorithm>
+#include <string>
+#include <streambuf>
+#include <ostream>
+#include <functional>
+#include <cstring>
+#include <string>
+#include <sstream>
+
 // XXX: override the default (via undef) if a dlg.h was included before this file?
 
 // By default this header automatically uses a different, typesafe formatting
@@ -34,17 +46,6 @@
 	#define DLG_FORMAT_DEFAULT_REPLACE "{}"
 #endif
 
-#include <dlg/dlg.h>
-#include <dlg/output.h>
-
-#include <algorithm>
-#include <string>
-#include <streambuf>
-#include <ostream>
-#include <functional>
-#include <cstring>
-#include <string>
-#include <sstream>
 
 namespace dlg {
 
