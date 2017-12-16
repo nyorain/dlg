@@ -58,13 +58,13 @@ struct dlg_style {
 };
 
 // Like fprintf but fixes utf-8 output to console on windows.
-DLG_API void dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
-DLG_API void dlg_vfprintf(FILE* stream, const char* format, va_list list);
+DLG_API int dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
+DLG_API int dlg_vfprintf(FILE* stream, const char* format, va_list list);
 
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
 // On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
-DLG_API void dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
+DLG_API int dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
 	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
 	
 // Features to output from the generic output handler.

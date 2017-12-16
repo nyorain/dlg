@@ -211,7 +211,7 @@ void dlg_escape_sequence(struct dlg_style style, char buf[12]) {
 	}
 }
 
-void dlg_vfprintf(FILE* stream, const char* format, va_list args) {
+int dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 #ifdef DLG_OS_WIN
 	void* handle = NULL;
 	if(stream == stdout) {
@@ -227,8 +227,7 @@ void dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 		va_end(args_copy);
 
 		if(needed < 0) {
-			fprintf(stderr, "dlg_fprintf: invalid format/arguments given\n");
-			return;
+			return needed;
 		}
 
 		// we don't allocate too much on the stack
@@ -236,34 +235,36 @@ void dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 		// or use another cached buffer
 		if(needed >= DLG_MAX_STACK_BUF_SIZE) {
 			win_write_heap(handle, needed, format, args);
-			return;
+			return needed;
 		} else {
 			win_write_stack(handle, needed, format, args);
-			return;
+			return needed;
 		}
 	}
 #endif
 
-	vfprintf(stream, format, args);
+	return vfprintf(stream, format, args);
 }
 
-void dlg_fprintf(FILE* stream, const char* format, ...) {
+int dlg_fprintf(FILE* stream, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
-	dlg_vfprintf(stream, format, args);
+	int ret = dlg_vfprintf(stream, format, args);
 	va_end(args);
+	return ret;
 }
 
-void dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format, ...) {
+int dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format, ...) {
 	char buf[12];
 	dlg_escape_sequence(style, buf);
 
 	fprintf(stream, "%s", buf);
 	va_list args;
 	va_start(args, format);
-	dlg_vfprintf(stream, format, args);
+	int ret = dlg_vfprintf(stream, format, args);
 	va_end(args);
 	fprintf(stream, "%s", dlg_reset_sequence);
+	return ret;
 }
 
 void dlg_generic_output(dlg_generic_output_handler output, void* data, 

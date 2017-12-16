@@ -5,6 +5,16 @@
 #ifndef _DLG_DLG_HPP_
 #define _DLG_DLG_HPP_
 
+
+// By default this header automatically uses a different, typesafe formatting
+// function. Make sure to never include dlg.h in your translation unit before 
+// including dlg.hpp to make this work.
+// The new formatting function works like a type-safe version of printf, see dlg::format.
+// TODO: override the default (via undef) if a dlg.h was included before this file?
+#ifndef DLG_FMT_FUNC
+	#define DLG_FMT_FUNC ::dlg::detail::tlformat
+#endif
+
 #include <dlg/dlg.h>
 #include <dlg/output.h>
 
@@ -16,16 +26,6 @@
 #include <cstring>
 #include <string>
 #include <sstream>
-
-// XXX: override the default (via undef) if a dlg.h was included before this file?
-
-// By default this header automatically uses a different, typesafe formatting
-// function. Make sure to never include dlg.h in your translation unit before 
-// including dlg.hpp to make this work.
-// The new formatting function works like a type-safe version of printf, see dlg::format.
-#ifndef DLG_FMT_FUNC
-	#define DLG_FMT_FUNC ::dlg::detail::tlformat
-#endif
 
 // Define this macro as 1 to disable all dlg_check* blocks.
 // Note that checking is defined separately from DLG_DISABLE.
@@ -45,7 +45,6 @@
 #ifndef DLG_FORMAT_DEFAULT_REPLACE
 	#define DLG_FORMAT_DEFAULT_REPLACE "{}"
 #endif
-
 
 namespace dlg {
 

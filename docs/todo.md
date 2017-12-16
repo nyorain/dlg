@@ -1,10 +1,10 @@
 # Ideas and todo
 
 - [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
-	- [ ] Also custom assertion handler? that is called inline and might throw?
-- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
+	- [ ] Also custom assertion handler? that is called inline (macro) and might throw?
+	- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
 - [ ] update picture for tags (and C) update
-- [ ] return int from dlg printf wrappers
+- [x] return int from dlg printf wrappers
 - [x] windows utf-8 output (see ny)
 - [x] windows text style support
 - [x] assert without error message
@@ -22,6 +22,7 @@
 - [x] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
+- [ ] compile time format specifier validation (c++) instead of exceptions
 - [ ] get stable (or make a list of what to do for 1.0)
 
 ### Make probably no sense:
