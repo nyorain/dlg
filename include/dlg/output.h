@@ -1,4 +1,4 @@
-// Copyright (c) 2017 nyorain
+// Copyright (c) 2018 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -64,9 +64,9 @@ DLG_API int dlg_vfprintf(FILE* stream, const char* format, va_list list);
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
 // On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
-DLG_API int dlg_styled_fprintf(FILE* stream, struct dlg_style style, 
+DLG_API int dlg_styled_fprintf(FILE* stream, struct dlg_style style,
 	const char* format, ...) DLG_PRINTF_ATTRIB(3, 4);
-	
+
 // Features to output from the generic output handler.
 // Some features might have only an effect in the specializations.
 enum dlg_output_feature {
@@ -76,7 +76,8 @@ enum dlg_output_feature {
 	dlg_output_func = 8, // output function
 	dlg_output_file_line = 16, // output file:line,
 	dlg_output_newline = 32, // output a newline at the end
-	dlg_output_threadsafe = 64 // locks stream before printing
+	dlg_output_threadsafe = 64, // locks stream before printing
+	dlg_output_time_msecs = 128 // output micro seconds (ms on windows)
 };
 
 // The default level-dependent output styles. The array values represent the styles
@@ -86,12 +87,12 @@ DLG_API extern const struct dlg_style dlg_default_output_styles[6];
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
 // Will call the given output func with the given data (and format + args to print)
-// for everything it has to print in printf format. 
+// for everything it has to print in printf format.
 // See also the *_stream and *_buf specializations for common usage.
 // The given output function must not be NULL.
 typedef void(*dlg_generic_output_handler)(void* data, const char* format, ...);
-DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data, 
-		unsigned int features, const struct dlg_origin* origin, const char* string, 
+DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data,
+		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]);
 
 // Generic output function. Used by the default output handler and might be useful
@@ -101,21 +102,21 @@ DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data,
 // Locks the stream (i.e. assures threadsafe access) when the associated feature
 // is passed (note that stdout/stderr might still mix from multiple threads).
 DLG_API void dlg_generic_output_stream(FILE* stream, unsigned int features,
-	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
 
-// Generic output function (see dlg_generic_output) that uses a buffer instead of 
+// Generic output function (see dlg_generic_output) that uses a buffer instead of
 // a stream. buf must at least point to *size bytes. Will set *size to the number
 // of bytes written (capped to the given size), if buf == NULL will set *size
 // to the needed size. The size parameter must not be NULL.
 DLG_API void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
-	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
 
 // Returns if the given stream is a tty. Useful for custom output handlers
 // e.g. to determine whether to use color.
 DLG_API bool dlg_is_tty(FILE* stream);
-	
+
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will
 // probably result in a buffer overflow or garbage being printed).

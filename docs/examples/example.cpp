@@ -62,7 +62,7 @@ int main()
 	// It is not included (anymore) to reduce bloat.
 	dlg_debug("Let's switch to debug output for some variation!");
 	dlg_debug("We can also {} strings", "format");
-	dlg_debug("You can use [{}], [{}] or [{}] formatter", "printf", 
+	dlg_debug("You can use [{}], [{}] or [{}] formatter", "printf",
 		"our own fmtlib-like, typesafe", "your own custom");
 
 	std::cout << "\n";
@@ -120,7 +120,7 @@ int main()
 
 	// test out our custom output handler
 	// assertions go into a file now
-	// there are also custom assertion levels 
+	// there are also custom assertion levels
 	// we can also choose the level dynamically by using the macros with the 'l' suffix
 	dlg_assertl(dlg_level_debug, 42 * 42 == -42); // should not be printed at all, level too low
 	dlg_assertl(dlg_level_fatal, "dlg"[0] == 42); // should be printed into file
@@ -131,11 +131,11 @@ int main()
 	dlg_warn("Anyone for some beautiful yellow color?"); // printed to cout
 
 	// this is filtered in our handler due to its tag; not printed at all
-	dlg_fatalt(("filtered"), "I am {}: feelsbadman", "useless"); 
+	dlg_fatalt(("filtered"), "I am {}: feelsbadman", "useless");
 
 	// example of a dynamic leveled, tagged log
 	// dynamic level logs just use the 'log' macro
-	dlg_logt(dlg_level_error, ("tag1", "tag2"), "error!"); 
+	dlg_logt(dlg_level_error, ("tag1", "tag2"), "error!");
 
 	// reset the output handler
 	dlg_set_handler(dlg_default_output, NULL);

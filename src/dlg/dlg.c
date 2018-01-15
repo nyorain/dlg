@@ -1,3 +1,7 @@
+// Copyright (c) 2018 nyorain
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
+
 #define _XOPEN_SOURCE
 #define _POSIX_C_SOURCE 201710L
 #define _WIN32_WINNT 0x0600
@@ -55,6 +59,7 @@ static struct dlg_data* dlg_create_data();
 	#define DLG_OS_UNIX
 	#include <unistd.h>
 	#include <pthread.h>
+	#include <sys/time.h>
 
 	static pthread_key_t dlg_data_key;
 
@@ -91,9 +96,15 @@ static struct dlg_data* dlg_create_data();
 	static void unlock_file(FILE* file) {
 		funlockfile(file);
 	}
-	
+
 	bool dlg_is_tty(FILE* stream) {
 		return isatty(fileno(stream));
+	}
+
+	static unsigned get_msecs() {
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		return tv.tv_usec;
 	}
 
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
@@ -107,7 +118,7 @@ static struct dlg_data* dlg_create_data();
 	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
-	
+
 	// the max buffer size we will convert on the stack
 	#define DLG_MAX_STACK_BUF_SIZE 1024
 
@@ -142,7 +153,7 @@ static struct dlg_data* dlg_create_data();
 	static void unlock_file(FILE* file) {
 		_unlock_file(file);
 	}
-	
+
 	bool dlg_is_tty(FILE* stream) {
 		return _isatty(_fileno(stream));
 	}
@@ -164,7 +175,7 @@ static struct dlg_data* dlg_create_data();
 
 		return true;
 	}
-	
+
 	static void win_write_heap(void* handle, int needed, const char* format, va_list args) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
@@ -173,13 +184,19 @@ static struct dlg_data* dlg_create_data();
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
 		free(buf1);
 	}
-	
+
 	static void win_write_stack(void* handle, int needed, const char* format, va_list args) {
 		char buf1[DLG_MAX_STACK_BUF_SIZE];
 		wchar_t buf2[DLG_MAX_STACK_BUF_SIZE];
 		vsnprintf(buf1, needed + 1, format, args);
 	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
 		WriteConsoleW(handle, buf2, needed, NULL, NULL);
+	}
+
+	static unsigned get_msecs() {
+		SYSTEMTIME st;
+		GetSystemTime(&st);
+		return st.wMilliseconds;
 	}
 
 #else
@@ -219,7 +236,7 @@ int dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 	} else if(stream == stderr) {
 		handle = GetStdHandle(STD_ERROR_HANDLE);
 	}
-	
+
 	if(handle) {
 		va_list args_copy;
 		va_copy(args_copy, args);
@@ -267,19 +284,19 @@ int dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format,
 	return ret;
 }
 
-void dlg_generic_output(dlg_generic_output_handler output, void* data, 
-		unsigned int features, const struct dlg_origin* origin, const char* string, 
+void dlg_generic_output(dlg_generic_output_handler output, void* data,
+		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
 	if(features & dlg_output_style) {
 		char buf[12];
 		dlg_escape_sequence(styles[origin->level], buf);
 		output(data, "%s", buf);
 	}
-	
+
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
 		output(data, "[");
 	}
-	
+
 	bool first_meta = true;
 	if(features & dlg_output_time) {
 		time_t t = time(NULL);
@@ -296,51 +313,60 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 		output(data, "%s", timebuf);
 		first_meta = false;
 	}
-	
+
+	if(features & dlg_output_time_msecs) {
+		if(!first_meta) {
+			output(data, ":");
+		}
+
+		output(data, "%d", get_msecs());
+		first_meta = false;
+	}
+
 	if(features & dlg_output_file_line) {
 		if(!first_meta) {
 			output(data, " ");
 		}
-		
+
 		// file names might conatin non-ascii chars
-		output(data, "%s:%u", origin->file, origin->line); 
+		output(data, "%s:%u", origin->file, origin->line);
 		first_meta = false;
 	}
-	
+
 	if(features & dlg_output_func) {
 		if(!first_meta) {
 			output(data, " ");
 		}
-		
+
 		// NOTE: use dlg_fprintf here? func names should really be ascii
 		// and can we otherwise be sure they are utf-8? probably not
 		output(data, "%s", origin->func);
 		first_meta = false;
 	}
-	
+
 	if(features & dlg_output_tags) {
 		if(!first_meta) {
 			output(data, " ");
 		}
-		
+
 		output(data, "{");
 		bool first_tag = true;
 		for(const char** tags = origin->tags; *tags; ++tags) {
 			if(!first_tag) {
 				output(data, ", ");
 			}
-			
+
 			output(data, "%s", *tags);
 			first_tag = false;
 		}
-		
+
 		output(data, "}");
 	}
-	
+
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
 		output(data, "] ");
 	}
-	
+
 	if(origin->expr && string) {
 		output(data, "assertion '%s' failed: '%s'", origin->expr, string);
 	} else if(origin->expr) {
@@ -348,7 +374,7 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 	} else if(string) {
 		output(data, "%s", string);
 	}
-	
+
 	if(features & dlg_output_style) {
 		output(data, "%s", dlg_reset_sequence);
 	}
@@ -368,7 +394,7 @@ static void print_size(void* size, const char* format, ...) {
 	va_start(args, format);
 
 	// TODO: check for -1? we only use our own formats here
-	*((size_t*) size) += vsnprintf(NULL, 0, format, args); 
+	*((size_t*) size) += vsnprintf(NULL, 0, format, args);
 	va_end(args);
 }
 
@@ -378,14 +404,14 @@ static void print_buf(void* dbuf, const char* format, ...) {
 	va_start(args, format);
 
 	// TODO: check for -1? we only use our own formats here
-	int printed = vsnprintf(buf->buf, *buf->size, format, args); 
+	int printed = vsnprintf(buf->buf, *buf->size, format, args);
 	va_end(args);
 	*buf->size -= printed;
 	buf->buf += printed;
 }
 
 void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
-		const struct dlg_origin* origin, const char* string, 
+		const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
 	if(buf) {
 		struct buf mbuf;
@@ -413,7 +439,7 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	if(features & dlg_output_threadsafe) {
 		lock_file(stream);
 	}
-	
+
 	dlg_generic_output(print_stream, stream, features, origin, string, styles);
 
 	if(features & dlg_output_threadsafe) {
@@ -441,7 +467,7 @@ bool dlg_win_init_ansi(void) {
 	if(res == 0) { // not initialized
 		InterlockedExchange(&status, 3 + init_ansi_console());
 	}
-	
+
 	while(status == 1); // currently initialized in another thread, spinlock
 	return (status == 4);
 #else
@@ -585,13 +611,13 @@ const char* dlg__printf_format(const char* str, ...) {
 void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
 		const char* func, const char* string, const char* expr) {
 	struct dlg_data* data = dlg_data();
-	unsigned int tag_count = 0; 
-	
+	unsigned int tag_count = 0;
+
 	// push default tags
-	while(tags[tag_count]) { 
+	while(tags[tag_count]) {
 		vec_push(data->tags, tags[tag_count++]);
 	}
-	
+
 	// push current global tags
 	for(size_t i = 0; i < vec_size(data->pairs); ++i) {
 		// TODO: really use strcmp here? does == not work?
@@ -600,7 +626,7 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 			vec_push(data->tags, pair.tag);
 		}
 	}
-	
+
 	// push call-specific tags, skip first terminating NULL
 	++tag_count;
 	while(tags[tag_count]) {

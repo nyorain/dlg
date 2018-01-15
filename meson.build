@@ -1,7 +1,7 @@
 project('dlg', ['c', 'cpp'],
 	version: '0.2.1',
-	default_options: ['c_std=c11', 
-		'cpp_std=c++11', 
+	default_options: ['c_std=c11',
+		'cpp_std=c++11',
 		'warning_level=3',
 		'werror=true'])
 
@@ -33,7 +33,7 @@ if meson.get_compiler('c').get_id() == 'msvc'
 
 	# make utf-8 examples work; ignore unused parameter and
 	# constant conditional expression warnings and a plainly wrong warning
-	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090'] 
+	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090']
 else
 	common_args += '-Wno-unused-parameter'
 endif
@@ -62,14 +62,14 @@ dlg_dep = declare_dependency(
 
 # sample
 if build_sample
-	sample = executable('sample', 
-		'docs/examples/example.cpp', 
+	sample = executable('sample',
+		'docs/examples/example.cpp',
 		cpp_args: common_args,
 		dependencies: dlg_dep)
 	test('sample', sample)
 
-	sample_c = executable('sample-c', 
-		'docs/examples/example.c', 
+	sample_c = executable('sample-c',
+		'docs/examples/example.c',
 		c_args: common_args,
 		dependencies: dlg_dep)
 	test('sample_c', sample_c)

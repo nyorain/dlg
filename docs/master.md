@@ -1,17 +1,9 @@
-Version 0.2.1
-=============
+Master (next version)
+====================
 
 # Changelog
 
-- output.h: dlg_generic_output does only print a newline if the
-  'dlg_output_newline' is passed __[expected behvaiour breakage]__
-- dlg.hpp: fixed bug where generic_output would output a string that
-  contained (as part of the std::string) the terminating null character
-- dlg.hpp: fixed buf where too long string would cause an issue in
-  dlg::detail::StreamBuffer and therefore the default format function
-- add dlg_output_threadsafe feature (and add it to default output handler)
-- dlg.hpp: moved usage DLG_DISABLE under inclusion of dlg.h
-- output.h: the printf wrappers return int now (from the underlaying call)
+- output.h: add dlg_output_msecs for more time output precision
 
 # Synopsis of dlg.h
 
@@ -224,7 +216,8 @@ enum dlg_output_feature {
 	dlg_output_func = 8, // output function
 	dlg_output_file_line = 16, // output file:line,
 	dlg_output_newline = 32, // output a newline at the end
-	dlg_output_threadsafe = 64 // locks stream before printing
+	dlg_output_threadsafe = 64, // locks stream before printing
+	dlg_output_time_msecs = 128 // output micro seconds (ms on windows)
 };
 
 // The default level-dependent output styles. The array values represent the styles
@@ -383,3 +376,4 @@ std::string generic_output(unsigned int features,
 
 } // namespace dlg
 ```
+

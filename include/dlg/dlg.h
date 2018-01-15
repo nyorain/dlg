@@ -1,4 +1,4 @@
-// Copyright (c) 2017 nyorain
+// Copyright (c) 2018 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 // Hosted at https://github.com/nyorain/dlg.
-// There are examples and documentation. 
+// There are examples and documentation.
 // Issue reports and contributions appreciated.
 
 #ifdef __cplusplus
@@ -52,7 +52,7 @@ extern "C" {
 #ifndef DLG_FILE
 	#define DLG_FILE dlg__strip_root_path(__FILE__, DLG_BASE_PATH)
 
-	// the base path stripped from __FILE__. If you don't override DLG_FILE set this to 
+	// the base path stripped from __FILE__. If you don't override DLG_FILE set this to
 	// the project root to make 'main.c' from '/some/bullshit/main.c'
 	#ifndef DLG_BASE_PATH
 		#define DLG_BASE_PATH ""
@@ -151,7 +151,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	inline void dlg_set_handler(dlg_handler handler, void* data) {}
 
 	// The default output handler.
-	// Only use this to reset the output handler, prefer to use 
+	// Only use this to reset the output handler, prefer to use
 	// dlg_generic_output (from output.h) which this function simply calls.
 	// It also flushes the stream used and correctly outputs even from multiple threads.
 	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {}

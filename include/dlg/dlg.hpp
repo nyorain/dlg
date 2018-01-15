@@ -1,4 +1,4 @@
-// Copyright (c) 2017 nyorain
+// Copyright (c) 2018 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -7,7 +7,7 @@
 
 
 // By default this header automatically uses a different, typesafe formatting
-// function. Make sure to never include dlg.h in your translation unit before 
+// function. Make sure to never include dlg.h in your translation unit before
 // including dlg.hpp to make this work.
 // The new formatting function works like a type-safe version of printf, see dlg::format.
 // TODO: override the default (via undef) if a dlg.h was included before this file?
@@ -41,7 +41,7 @@
 // The default string to replace by the dlg::*format functions.
 // Used as default by tlformat (set as new DLG_FMT_FUNC) or dlg::format.
 // If a custom replace string is required in certain situations without
-// overriding this macro, use dlg::rformat or dlg::gformat. 
+// overriding this macro, use dlg::rformat or dlg::gformat.
 #ifndef DLG_FORMAT_DEFAULT_REPLACE
 	#define DLG_FORMAT_DEFAULT_REPLACE "{}"
 #endif
@@ -76,12 +76,12 @@ protected:
 };
 
 #if DLG_DISABLE
-	// Constructs a dlg::TagsGuard in the current scope, passing correctly the 
+	// Constructs a dlg::TagsGuard in the current scope, passing correctly the
 	// current function, i.e. only dlg calls made from other functions
 	// that are called in the current scope will not use the given tags.
 	// Expects the tags to be set as parameters like this:
 	// ```dlg_tags("tag1", "tag2")```.
-	#define dlg_tags(...) 
+	#define dlg_tags(...)
 
 	// Constructs a dlg::TagsGuard in the current scope, passing nullptr as func.
 	// This means that even dlg calls made from other functions called in the current
@@ -92,7 +92,7 @@ protected:
 #else
 	#define dlg_tags(...) \
 		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
-		::dlg::TagsGuard _dlgltg_(_dlgtags_, __func__) 
+		::dlg::TagsGuard _dlgltg_(_dlgtags_, __func__)
 	#define dlg_tags_global(...) \
 		const char* _dlgtags_[] = {__VA_ARGS__, nullptr}; \
 		::dlg::TagsGuard _dlggtg_(_dlgtags_.begin(), nullptr)
@@ -102,7 +102,7 @@ protected:
 #if DLG_DISABLE_CHECK
 	// Executes the given block only if dlg checking is enabled
 	#define dlg_check(code)
-	
+
 	// Executes the given blocks with the given tags only if dlg checking is enabled
 	// The tags must have the default `("tag1", "tag2")` format.
 	#define dlg_checkt(tags, code)
@@ -134,11 +134,11 @@ inline void set_handler(Handler handler);
 /// Generic version of dlg::format, allows to set the special string sequence
 /// to be replaced with arguments instead of using DLG_FORMAT_DEFAULT_REPLACE.
 /// Simply replaces all occurrences of 'replace' in 'fmt' with the given
-/// arguments (as printed using operator<< with an ostream) in order and 
+/// arguments (as printed using operator<< with an ostream) in order and
 /// prints everything to the given ostream.
 /// Throws std::invalid_argument if there are too few or too many arguments.
 /// If you want to print the replace string without being replaced, wrap
-/// it into backslashes (\\). If you want to print your own types, simply 
+/// it into backslashes (\\). If you want to print your own types, simply
 /// overload operator<< for ostream correctly. The replace string itself
 /// must not be a backslash character.
 ///  - gformat("%", "number: '%', string: '%'", 42, "aye"); -> "number: '42', string: 'aye'"
@@ -167,14 +167,14 @@ std::string format(StringParam fmt, Args&&... args) {
 }
 
 /// Specialization of dlg_generic_output that returns a std::string.
-inline std::string generic_output(unsigned int features, 
-	const struct dlg_origin& origin, StringParam string, 
+inline std::string generic_output(unsigned int features,
+	const struct dlg_origin& origin, StringParam string,
 	const struct dlg_style styles[6] = dlg_default_output_styles);
 
 
 // - Private interface & implementation -
 namespace detail {
-	
+
 inline void handler_wrapper(const struct dlg_origin* origin, const char* str, void* data) {
 	auto& handler = *static_cast<Handler*>(data);
 	try {
@@ -212,7 +212,7 @@ public:
 
 			setp(buf_ + off, buf_ + size_);
 		}
-		
+
 		if(!traits_type::eq_int_type(ch, traits_type::eof())) {
 			*pptr() = (char_type) ch;
 			pbump(1);
@@ -252,7 +252,7 @@ const char* tlformat(StringParam fmt, Args&&... args) {
 		std::ostream output(&buf);
 		gformat(output, DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
 	}
-	
+
 	return *dlg_thread_buffer(nullptr);
 }
 
@@ -273,7 +273,9 @@ void gformat(std::ostream& os, StringParam replace, StringParam fmt, Arg&& arg, 
 		throw std::invalid_argument("Too many arguments to format supplied");
 	}
 
-	os.write(fmt.str, next - fmt.str); // XXX: any drawback compared to formatted?
+	// XXX: any drawback compared to formatted?
+	// this allows to use temporary ostream modifiers only to real arguments
+	os.write(fmt.str, next - fmt.str);
 	os << std::forward<Arg>(arg);
 	auto len = std::strlen(replace.str);
 	return gformat(os, replace, next + len, std::forward<Args>(args)...);
@@ -285,14 +287,14 @@ void set_handler(Handler handler) {
 	dlg_set_handler(&detail::handler_wrapper, &handler_);
 }
 
-std::string generic_output(unsigned int features, 
+std::string generic_output(unsigned int features,
 		const struct dlg_origin& origin, StringParam string,
 		const struct dlg_style styles[6]) {
-	std::size_t size;	
+	std::size_t size;
 	dlg_generic_output_buf(nullptr, &size, features, &origin,
 		string.str, styles);
 	std::string ret(++size, ' ');
-	
+
 	// NOTE: this might (theoretically) cause problems before C++17
 	//  but this function should return a string and all compilers
 	//  make it work. If you want to go sure, just use C++17
