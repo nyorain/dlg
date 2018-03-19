@@ -670,29 +670,3 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 
 	return file;
 }
-
-// TODO: not sure if it is a good idea to add them
-/*
-	#define dlg_tag_base(global, tags, code) { \
-		const char* _dlg_tag_tags[] = {DLG_EVAL tags}; \
-		const char** _dlg_tag_ptr = _dlg_tag_tags;; \
-		const char* _dlg_tag_func = global ? NULL : __FUNCTION__; \
-		while(_dlg_tag_ptr)  \
-			dlg_add_tag(_dlg_tag_ptr++, _dlg_tag_func); \
-		code \
-		_dlg_tag_ptr = _dlg_tag_tags; \
-		while(_dlg_tag_ptr) \
-			 dlg_remove_tag(_dlg_tag_ptr++, _dlg_tag_func); \
-	}
-
-#if DLG_CHECK
-	#define dlg_check(code) { code }
-	#define dlg_checkt(tags, code) dlg_tag(tags, code)
-#else
-	#define dlg_check(code)
-	#define dlg_checkt(tags, code)
-#endif // DLG_CHECK
-
-#define dlg_tag(tags, code) dlg_tag_base(false, tags, code)
-#define dlg_tag_global(tags, code) dlg_tag_base(true, tags, code)
-*/

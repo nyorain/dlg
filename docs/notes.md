@@ -2,11 +2,11 @@ Notes
 =====
 
 # General
- 
+
 - The default of DLG_FILE (stripping DLG_BASE_PATH (if existent) from the current file)
   will not really compare DLG_BASE_PATH with the file name but just skip its length
-- Adding your project name as tag to all calls coming from your library is probably 
-  a good idea. It can either be done defining DLG_DEFAULT_TAGS e.g. from the 
+- Adding your project name as tag to all calls coming from your library is probably
+  a good idea. It can either be done defining DLG_DEFAULT_TAGS e.g. from the
   build system (prefer this method).
   Or add macros that add the tags like this (usually not a good idea):
 
@@ -37,10 +37,37 @@ things you have to keep in mind for dlg to work.
   to work around the backslashes (e.g. in the path returned from ```meson.source_root()```)
   sine those would be interpreted as invalid escape characters and there is not meson
   function to escape backslashes correctly (as of 2017).
-  
+
   DLG itself handles it this way:
 
 ```meson
 source_root = meson.source_root().split('\\')
 add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', language: 'c')
+```
+
+## C-api tag guards
+
+```c
+	#define dlg_tag_base(global, tags, code) { \
+		const char* _dlg_tag_tags[] = {DLG_EVAL tags}; \
+		const char** _dlg_tag_ptr = _dlg_tag_tags;; \
+		const char* _dlg_tag_func = global ? NULL : __FUNCTION__; \
+		while(_dlg_tag_ptr)  \
+			dlg_add_tag(_dlg_tag_ptr++, _dlg_tag_func); \
+		code \
+		_dlg_tag_ptr = _dlg_tag_tags; \
+		while(_dlg_tag_ptr) \
+			 dlg_remove_tag(_dlg_tag_ptr++, _dlg_tag_func); \
+	}
+
+#if DLG_CHECK
+	#define dlg_check(code) { code }
+	#define dlg_checkt(tags, code) dlg_tag(tags, code)
+#else
+	#define dlg_check(code)
+	#define dlg_checkt(tags, code)
+#endif // DLG_CHECK
+
+#define dlg_tag(tags, code) dlg_tag_base(false, tags, code)
+#define dlg_tag_global(tags, code) dlg_tag_base(true, tags, code)
 ```

@@ -34,6 +34,6 @@
 		- [ ] ~~warn about unused but passed variables~~
 - [ ] add field to Origin that determines whether the origin is inside a dlg::check block?
 - [ ] add at least really simply pattern matching utility function for tags?
-- [ ] make dlg_assert return false on failure 
-	- not that easy to accomplish actually since we use an if, if we would use ? : we would get 
+- [ ] make dlg_assert return false on failure
+	- not that easy to accomplish actually since we use an if, if we would use ? : we would get
 	  an unused expression warning if it is not used. Not worth it
