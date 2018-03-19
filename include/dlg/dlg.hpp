@@ -26,6 +26,7 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <type_traits>
 
 // Define this macro as 1 to disable all dlg_check* blocks.
 // Note that checking is defined separately from DLG_DISABLE.
@@ -251,6 +252,20 @@ const char* tlformat(StringParam fmt, Args&&... args) {
 		detail::StreamBuffer buf(*dbuf, *size);
 		std::ostream output(&buf);
 		gformat(output, DLG_FORMAT_DEFAULT_REPLACE, fmt, std::forward<Args>(args)...);
+	}
+
+	return *dlg_thread_buffer(nullptr);
+}
+
+template<typename Arg, typename = typename std::enable_if<
+	!std::is_convertible<Arg, StringParam>::value>::type>
+const char* tlformat(Arg arg) {
+	{
+		std::size_t* size;
+		char** dbuf = dlg_thread_buffer(&size);
+		detail::StreamBuffer buf(*dbuf, *size);
+		std::ostream output(&buf);
+		output << arg;
 	}
 
 	return *dlg_thread_buffer(nullptr);

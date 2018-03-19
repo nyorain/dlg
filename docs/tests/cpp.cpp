@@ -1,4 +1,4 @@
-#define DLG_DEFAULT_TAGS "dlg", 
+#define DLG_DEFAULT_TAGS "dlg",
 
 #include <dlg/dlg.hpp>
 #include <dlg/output.h>
@@ -32,6 +32,9 @@ int main() {
 	}
 
 	EXPECT(dlg::detail::tlformat("{}", a) == a);
+	EXPECT(dlg::detail::tlformat(42) == std::string("42"));
+	EXPECT(dlg::detail::tlformat("ỦŤ₣8 ťéŝť ŝťяïאָğ")
+		== std::string("ỦŤ₣8 ťéŝť ŝťяïאָğ"));
 
 	// TODO: more output.h testing
 	{
@@ -75,7 +78,7 @@ int main() {
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
 		expected.fired = true;
 		if(expected.check & check_string) {
-			if((str == nullptr) != (expected.str == nullptr) || 
+			if((str == nullptr) != (expected.str == nullptr) ||
 					(str && std::strcmp(str, expected.str) != 0)) {
 				std::printf("$$$ handler: invalid string [%d]\n", origin.line);
 				++gerror;
@@ -93,14 +96,17 @@ int main() {
 		expected.str = "Just some formatted info";
 		dlg_infot(("tag1", "tag2"), "Just some {} info", "formatted");
 	}
-	
+
 	expected = {};
 	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
 
+	dlg_info("We can also just log objects");
+	dlg_info(42);
+
 	str = "should fire... {} {}";
 	dlg_assertm(false, str, "!", 24);
-	
+
 	auto entered = false;
 	dlg_checkt(("checked"), {
 		entered = true;

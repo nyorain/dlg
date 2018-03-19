@@ -4,6 +4,8 @@ Master (next version)
 # Changelog
 
 - output.h: add dlg_output_msecs for more time output precision
+- dlg.hpp: Allow tlformat (default dlg.hpp formatter) to be called with just a
+  non-string object (which will then just be printed)
 
 # Synopsis of dlg.h
 
@@ -23,7 +25,7 @@ Master (next version)
 // evaluated to the 'file' member in dlg_origin
 #define DLG_FILE dlg__strip_root_path(__FILE__, DLG_BASE_PATH)
 
-// the base path stripped from __FILE__. If you don't override DLG_FILE set this to 
+// the base path stripped from __FILE__. If you don't override DLG_FILE set this to
 // the project root to make 'main.c' from '/some/bullshit/main.c'
 #define DLG_BASE_PATH ""
 
@@ -123,7 +125,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 void dlg_set_handler(dlg_handler handler, void* data);
 
 // The default output handler. Pass a valid FILE* as stream or NULL to use stderr/stdout.
-// Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled, 
+// Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled,
 // the style feature enabled if the stream is a console (and if on windows ansi mode could
 // be set) and dlg_default_output_styles as styles.
 // It also flushes the stream used.
@@ -204,9 +206,9 @@ int dlg_fprintf(FILE* stream, const char* format, ...);
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
 // On windows escape sequences don't work out of the box, see dlg_win_init_ansi().
-int dlg_styled_fprintf(FILE* stream, const struct dlg_style style, 
+int dlg_styled_fprintf(FILE* stream, const struct dlg_style style,
 	const char* format, ...);
-	
+
 // Features to output from the generic output handler.
 // Some features might have only an effect in the specializations.
 enum dlg_output_feature {
@@ -227,12 +229,12 @@ const struct dlg_style dlg_default_output_styles[6];
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
 // Will call the given output func with the given data (and format + args to print)
-// for everything it has to print in printf format. 
+// for everything it has to print in printf format.
 // See also the *_stream and *_buf specializations for common usage.
 // The given output function must not be NULL.
 typedef void(*dlg_generic_output_handler)(void* data, const char* format, ...);
-void dlg_generic_output(dlg_generic_output_handler output, void* data, 
-		unsigned int features, const struct dlg_origin* origin, const char* string, 
+void dlg_generic_output(dlg_generic_output_handler output, void* data,
+		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]);
 
 // Generic output function. Used by the default output handler and might be useful
@@ -242,21 +244,21 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 // Locks the stream (i.e. assures threadsafe access) when the associated feature
 // is passed (note that stdout/stderr might still mix from multiple threads).
 void dlg_generic_output_stream(FILE* stream, unsigned int features,
-	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
 
-// Generic output function (see dlg_generic_output) that uses a buffer instead of 
+// Generic output function (see dlg_generic_output) that uses a buffer instead of
 // a stream. buf must at least point to *size bytes. Will set *size to the number
 // of bytes written (capped to the given size), if buf == NULL will set *size
 // to the needed size. The size parameter must not be NULL.
 void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
-	const struct dlg_origin* origin, const char* string, 
+	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
 
 // Returns if the given stream is a tty. Useful for custom output handlers
 // e.g. to determine whether to use color.
 bool dlg_is_tty(FILE* stream);
-	
+
 // Returns the null-terminated escape sequence for the given style into buf.
 // Undefined behvaiour if any member of style has a value outside its enum range (will
 // probably result in a buffer overflow or garbage being printed).
@@ -278,7 +280,7 @@ bool dlg_win_init_ansi(void);
 
 ```cpp
 // By default this header automatically uses a different, typesafe formatting
-// function. Make sure to never include dlg.h in your translation unit before 
+// function. Make sure to never include dlg.h in your translation unit before
 // including dlg.hpp to make this work.
 // The new formatting function works like a type-safe version of printf, see dlg::format.
 #ifndef DLG_FMT_FUNC
@@ -288,7 +290,7 @@ bool dlg_win_init_ansi(void);
 // The default string to replace by the dlg::*format functions.
 // Used as default by tlformat (set as new DLG_FMT_FUNC) or dlg::format.
 // If a custom replace string is required in certain situations without
-// overriding this macro, use dlg::rformat or dlg::gformat. 
+// overriding this macro, use dlg::rformat or dlg::gformat.
 #ifndef DLG_FORMAT_DEFAULT_REPLACE
 	#define DLG_FORMAT_DEFAULT_REPLACE "{}"
 #endif
@@ -311,7 +313,7 @@ protected:
 	const char* func_;
 };
 
-// Constructs a dlg::TagsGuard in the current scope, passing correctly the 
+// Constructs a dlg::TagsGuard in the current scope, passing correctly the
 // current function, i.e. only dlg calls made from other functions
 // that are called in the current scope will not use the given tags.
 // Expects the tags to be set as parameters like this:
@@ -344,11 +346,11 @@ void set_handler(Handler handler);
 /// Generic version of dlg::format, allows to set the special string sequence
 /// to be replaced with arguments instead of using DLG_FORMAT_DEFAULT_REPLACE.
 /// Simply replaces all occurrences of 'replace' in 'fmt' with the given
-/// arguments (as printed using operator<< with an ostream) in order and 
+/// arguments (as printed using operator<< with an ostream) in order and
 /// prints everything to the given ostream.
 /// Throws std::invalid_argument if there are too few or too many arguments.
 /// If you want to print the replace string without being replaced, wrap
-/// it into backslashes (\\). If you want to print your own types, simply 
+/// it into backslashes (\\). If you want to print your own types, simply
 /// overload operator<< for ostream correctly. The replace string itself
 /// must not be a backslash character.
 ///  - gformat("%", "number: '%', string: '%'", 42, "aye"); -> "number: '42', string: 'aye'"
@@ -370,8 +372,8 @@ template<typename... Args>
 std::string format(const char* fmt, Args&&... args);
 
 /// Specialization of dlg_generic_output that returns a std::string.
-std::string generic_output(unsigned int features, 
-	const struct dlg_origin& origin, const char* string, 
+std::string generic_output(unsigned int features,
+	const struct dlg_origin& origin, const char* string,
 	const struct dlg_style styles[6] = dlg_default_output_styles);
 
 } // namespace dlg
