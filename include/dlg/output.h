@@ -58,6 +58,11 @@ struct dlg_style {
 };
 
 // Like fprintf but fixes utf-8 output to console on windows.
+// On non-windows sytems just uses the corresponding standard library
+// functions. On windows, if dlg was compiled with the win_console option,
+// will first try to output it in a way that allows the default console
+// to display utf-8. If that fails, will fall back to the standard
+// library functions.
 DLG_API int dlg_fprintf(FILE* stream, const char* format, ...) DLG_PRINTF_ATTRIB(2, 3);
 DLG_API int dlg_vfprintf(FILE* stream, const char* format, va_list list);
 
@@ -115,6 +120,7 @@ DLG_API void dlg_generic_output_buf(char* buf, size_t* size, unsigned int featur
 
 // Returns if the given stream is a tty. Useful for custom output handlers
 // e.g. to determine whether to use color.
+// NOTE: Due to windows limitations currently returns false for wsl ttys.
 DLG_API bool dlg_is_tty(FILE* stream);
 
 // Returns the null-terminated escape sequence for the given style into buf.
@@ -126,17 +132,14 @@ DLG_API void dlg_escape_sequence(struct dlg_style style, char buf[12]);
 // The reset style escape sequence.
 DLG_API extern const char* dlg_reset_sequence;
 
-// XXX: let this function take a FILE* parameter and return true/false depending
-// on whether ansi could be set AND the given stream is stdout/stderr pointing
-// to a terminal?
-
-// Just returns true on non-windows systems.
+// Just returns true without other effect on non-windows systems or if dlg 
+// was compiled without the win_console option.
 // On windows tries to set the console mode to ansi to make escape sequences work.
 // This works only on newer windows 10 versions. Returns false on error.
 // Only the first call to it will have an effect, following calls just return the result.
 // The function is threadsafe. Automatically called by the default output handler.
 // This will only be able to set the mode for the stdout and stderr consoles, so
-// other streams to consoles will proably still not work.
+// other streams to consoles will still not work.
 DLG_API bool dlg_win_init_ansi(void);
 
 #ifdef __cplusplus

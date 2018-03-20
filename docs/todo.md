@@ -24,9 +24,16 @@
 	- Yeah, don't do it. We are c now
 - [ ] compile time format specifier validation (c++) instead of exceptions
 - [ ] get stable (or make a list of what to do for 1.0)
+- [ ] make wsl output faster. It currently triggers a WriteConsole error on
+      every output and then falls back to default, performing the formatting
+	  twice
+- [ ] Fix all todos in dlg.c (mainly error handling questions)
+	- [ ] Check GetLastError with winapi functions?
+- [ ] contrib file that implements android log handler (using android liblog)
 
 ### Make probably no sense:
 
+- [ ] Default dummy platform (fallback if neither unix nor windows detected)
 - [ ] rework/further strip fmt.hpp
 	- [ ] since it is parsed to some type-erased list anyways, don't include the whole header
 	- [ ] ~~constexpr string parsing~~ __[Not really worth it/fully possible i guess]__

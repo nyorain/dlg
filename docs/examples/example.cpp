@@ -109,12 +109,11 @@ int main()
 		// we could add additional switches for e.g. file/line, tags or msg content
 
 		// we call the generic output handler that will take care
-		// of formatting the origin (tags/type/expression/level/file/line) and color
-		// and also gives us utf-8 console output support on windows.
+		// of formatting the origin (tags/type/expression/level/file/line) and color.
 		// We could print more stuff (like tags/time, see dlg/output.h) but stick
 		// with some clean defaults here
 		unsigned int features = dlg_output_file_line | dlg_output_newline;
-		features |= use_color ? dlg_output_style : 0;
+		features |= use_color * dlg_output_style;
 		(*os) << dlg::generic_output(features, origin, msg);
 	});
 

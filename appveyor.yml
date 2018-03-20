@@ -22,7 +22,7 @@ install:
   - appveyor-retry appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.6.0/ninja-win.zip" -FileName ninja.zip
   - 7z x ninja.zip -oC:\ninja > nul
     # update the path and show information; TODO: 64 bit python?
-  - set PATH=C:\ninja;C:\mingw\mingw64\bin;C:\Python34\scripts;C:Python34;%PATH%
+  - set PATH=C:\ninja;C:\mingw\mingw64\bin;C:\Python36\scripts;C:Python36;%PATH%
   - ninja --version
     # install meson
   - pip3 install meson

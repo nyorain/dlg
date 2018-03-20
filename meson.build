@@ -8,6 +8,8 @@ project('dlg', ['c', 'cpp'],
 build_library = get_option('library')
 build_sample = get_option('sample')
 tests = get_option('tests')
+win_console = get_option('win_console')
+default_output_always_color = get_option('default_output_always_color')
 
 # dep variables depending on build type
 inc = include_directories('include')
@@ -29,13 +31,21 @@ dlg_args = []
 common_args = []
 deps = []
 if meson.get_compiler('c').get_id() == 'msvc'
-	dlg_args += '/DDLG_API=__declspec(dllexport)'
+	dlg_args += '-DDLG_API=__declspec(dllexport)'
 
 	# make utf-8 examples work; ignore unused parameter and
 	# constant conditional expression warnings and a plainly wrong warning
 	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090']
 else
 	common_args += '-Wno-unused-parameter'
+endif
+
+if win_console
+  dlg_args += '-DDLG_WIN_CONSOLE=1'
+endif
+
+if default_output_always_color
+  dlg_args += '-DDLG_DEFAULT_OUTPUT_ALWAYS_COLOR=1'
 endif
 
 # build library

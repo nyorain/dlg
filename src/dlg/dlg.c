@@ -107,6 +107,7 @@ static struct dlg_data* dlg_create_data();
 		return tv.tv_usec;
 	}
 
+// platform switch -- end unix
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define DLG_OS_WIN
 	#define WIN32_LEAN_AND_MEAN
@@ -158,9 +159,10 @@ static struct dlg_data* dlg_create_data();
 		return _isatty(_fileno(stream));
 	}
 
+#ifdef DLG_WIN_CONSOLE
 	static bool init_ansi_console(void) {
 		HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
-		HANDLE err = GetStdHandle(STD_OUTPUT_HANDLE);
+		HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
 		if(out == INVALID_HANDLE_VALUE || err == INVALID_HANDLE_VALUE)
 			return false;
 
@@ -170,28 +172,30 @@ static struct dlg_data* dlg_create_data();
 
 		outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 		errMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-		if (!SetConsoleMode(out, outMode) || !SetConsoleMode(out, errMode))
+		if(!SetConsoleMode(out, outMode) || !SetConsoleMode(out, errMode))
 			return false;
 
 		return true;
 	}
 
-	static void win_write_heap(void* handle, int needed, const char* format, va_list args) {
+	static bool win_write_heap(void* handle, int needed, const char* format, va_list args) {
 		char* buf1 = xalloc(3 * needed + 3 + (needed % 2));
 		wchar_t* buf2 = (wchar_t*) (buf1 + needed + 1 + (needed % 2));
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
-		WriteConsoleW(handle, buf2, needed, NULL, NULL);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
+		bool ret = (needed != 0 && WriteConsoleW(handle, buf2, needed, NULL, NULL) != 0);
 		free(buf1);
+		return ret;
 	}
 
-	static void win_write_stack(void* handle, int needed, const char* format, va_list args) {
+	static bool win_write_stack(void* handle, int needed, const char* format, va_list args) {
 		char buf1[DLG_MAX_STACK_BUF_SIZE];
 		wchar_t buf2[DLG_MAX_STACK_BUF_SIZE];
 		vsnprintf(buf1, needed + 1, format, args);
-	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1); // TODO: handle error
-		WriteConsoleW(handle, buf2, needed, NULL, NULL);
+	    needed = MultiByteToWideChar(CP_UTF8, 0, buf1, needed, buf2, needed + 1);
+		return (needed != 0 && WriteConsoleW(handle, buf2, needed, NULL, NULL) != 0);
 	}
+#endif // DLG_WIN_CONSOLE
 
 	static unsigned get_msecs() {
 		SYSTEMTIME st;
@@ -199,7 +203,7 @@ static struct dlg_data* dlg_create_data();
 		return st.wMilliseconds;
 	}
 
-#else
+#else // platform switch -- end windows
 	#error Cannot determine platform (needed for color and utf-8 and stuff)
 #endif
 
@@ -229,7 +233,7 @@ void dlg_escape_sequence(struct dlg_style style, char buf[12]) {
 }
 
 int dlg_vfprintf(FILE* stream, const char* format, va_list args) {
-#ifdef DLG_OS_WIN
+#if defined(DLG_OS_WIN) && defined(DLG_WIN_CONSOLE)
 	void* handle = NULL;
 	if(stream == stdout) {
 		handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -247,15 +251,17 @@ int dlg_vfprintf(FILE* stream, const char* format, va_list args) {
 			return needed;
 		}
 
-		// we don't allocate too much on the stack
+		// We don't allocate too much on the stack
 		// but we also don't want to call alloc every logging call
 		// or use another cached buffer
 		if(needed >= DLG_MAX_STACK_BUF_SIZE) {
-			win_write_heap(handle, needed, format, args);
-			return needed;
+			if(win_write_heap(handle, needed, format, args)) {
+				return needed;
+			}
 		} else {
-			win_write_stack(handle, needed, format, args);
-			return needed;
+			if(win_write_stack(handle, needed, format, args)) {
+				return needed;
+			}
 		}
 	}
 #endif
@@ -451,16 +457,22 @@ void dlg_default_output(const struct dlg_origin* origin, const char* string, voi
 	FILE* stream = data ? data : stdout;
 	unsigned int features = dlg_output_file_line | dlg_output_newline |
 		dlg_output_threadsafe;
+
+#ifdef DLG_DEFAULT_OUTPUT_ALWAYS_COLOR
+	dlg_win_init_ansi();
+	features |= dlg_output_style;
+#else
 	if(dlg_is_tty(stream) && dlg_win_init_ansi()) {
 		features |= dlg_output_style;
 	}
+#endif
 
 	dlg_generic_output_stream(stream, features, origin, string, dlg_default_output_styles);
 	fflush(stream);
 }
 
 bool dlg_win_init_ansi(void) {
-#ifdef DLG_OS_WIN
+#if defined(DLG_OS_WIN) && defined(DLG_WIN_CONSOLE)
 	// TODO: use init once
 	static volatile LONG status = 0;
 	LONG res = InterlockedCompareExchange(&status, 1, 0);
@@ -475,7 +487,7 @@ bool dlg_win_init_ansi(void) {
 #endif
 }
 
-// TODO: use size_t instead of unsigned int?
+// TODO: use size_t instead of unsigned int for size?
 // small dynamic vec/array implementation
 // Since the macros vec_init and vec_add[c]/vec_push might
 // change the pointers value it must not be referenced somewhere else.

@@ -195,7 +195,13 @@ struct dlg_style {
 };
 
 // Like fprintf but fixes utf-8 output to console on windows.
+// On non-windows sytems just uses the corresponding standard library
+// functions. On windows, if dlg was compiled with the win_console option,
+// will first try to output it in a way that allows the default console
+// to display utf-8. If that fails, will fall back to the standard
+// library functions.
 int dlg_fprintf(FILE* stream, const char* format, ...);
+int dlg_vfprintf(FILE* stream, const char* format, va_list list);
 
 // Like dlg_printf, but also applies the given style to this output.
 // The style will always be applied (using escape sequences), independent of the given stream.
@@ -251,6 +257,7 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 
 // Returns if the given stream is a tty. Useful for custom output handlers
 // e.g. to determine whether to use color.
+// NOTE: Due to windows limitations currently returns false for wsl ttys.
 bool dlg_is_tty(FILE* stream);
 
 // Returns the null-terminated escape sequence for the given style into buf.
@@ -262,11 +269,14 @@ void dlg_escape_sequence(const struct dlg_style style, char buf[12]);
 // The reset style escape sequence.
 const char* dlg_reset_sequence;
 
-// Just returns true on non-windows systems.
+// Just returns true without other effect on non-windows systems or if dlg 
+// was compiled without the win_console option.
 // On windows tries to set the console mode to ansi to make escape sequences work.
 // This works only on newer windows 10 versions. Returns false on error.
-// Only the first call to it will have an effect, the function is also threadsafe.
-// Automatically called by the default output handler.
+// Only the first call to it will have an effect, following calls just return the result.
+// The function is threadsafe. Automatically called by the default output handler.
+// This will only be able to set the mode for the stdout and stderr consoles, so
+// other streams to consoles will still not work.
 bool dlg_win_init_ansi(void);
 ```
 
@@ -277,8 +287,10 @@ bool dlg_win_init_ansi(void);
 // function. Make sure to never include dlg.h in your translation unit before
 // including dlg.hpp to make this work.
 // The new formatting function works like a type-safe version of printf, see dlg::format.
+// It can also be called with only an object (e.g. dlg_info(42)) which will
+// then simply output the object.
 #ifndef DLG_FMT_FUNC
-	#define DLG_FMT_FUNC <format function with dlg::format semantics>
+	#define DLG_FMT_FUNC <format function with dlg::format like semantics>
 #endif
 
 // The default string to replace by the dlg::*format functions.
