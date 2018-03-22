@@ -26,7 +26,7 @@ you don't really need a build system for this after all.
 ## Show me something fancy already
 
 Besides a simple look into the [headers](include/dlg), have a look into the
-__[synopsis](docs/v0.2.md)__ and additional documentation for the latest release.
+__[synopsis](docs/api.md)__ and additional documentation for the latest release.
 
 Thousands words, explanations and pictures don't say as much as a single __[code example](docs/examples/example.cpp)__ though.
 Here a simple preview of its core functionality (there is more fancy stuff, look into the linked example):
