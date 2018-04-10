@@ -22,7 +22,7 @@
 - [ ] update README picture
 - [ ] Fix all todos in dlg.c (mainly error handling questions)
 	- [ ] Check GetLastError with winapi functions?
-- [ ] contrib file that implements android log handler (using android liblog)
+- [x] contrib file that implements android log handler (using android liblog)
 - [ ] make wsl output faster. It currently triggers a WriteConsole error on
       every output and then falls back to default, performing the formatting
 	  twice
