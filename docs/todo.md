@@ -1,9 +1,5 @@
 # Ideas and todo
 
-- [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
-	- [ ] Also custom assertion handler? that is called inline (macro) and might throw?
-	- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
-- [ ] update picture for tags (and C) update
 - [x] return int from dlg printf wrappers
 - [x] windows utf-8 output (see ny)
 - [x] windows text style support
@@ -22,16 +18,19 @@
 - [x] add appveyor testing (for mingw as well as visual studio)
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
-- [ ] compile time format specifier validation (c++) instead of exceptions
-- [ ] get stable (or make a list of what to do for 1.0)
-- [ ] make wsl output faster. It currently triggers a WriteConsole error on
-      every output and then falls back to default, performing the formatting
-	  twice
+- [x] make dlg.c valid c++ (mainly casting issues atm)
+- [ ] update README picture
 - [ ] Fix all todos in dlg.c (mainly error handling questions)
 	- [ ] Check GetLastError with winapi functions?
 - [ ] contrib file that implements android log handler (using android liblog)
+- [ ] make wsl output faster. It currently triggers a WriteConsole error on
+      every output and then falls back to default, performing the formatting
+	  twice
+- [ ] get stable (or make a list of what to do for 1.0)
 
-### Make probably no sense:
+### Kinda trashed ideas
+
+Just because you can something, doesn't mean you should, right?
 
 - [ ] Default dummy platform (fallback if neither unix nor windows detected)
 - [ ] rework/further strip fmt.hpp
@@ -44,3 +43,13 @@
 - [ ] make dlg_assert return false on failure
 	- not that easy to accomplish actually since we use an if, if we would use ? : we would get
 	  an unused expression warning if it is not used. Not worth it
+- [ ] compile time format specifier validation (c++) instead of exceptions
+	- really no way to implement it that is at least somewhat safe
+- [ ] assert_failed function (maybe as c symbol) that can be easily used as breakpoint
+	- [ ] Also custom assertion handler? that is called inline (macro) and might throw?
+	- [ ] example for custom failed assertion handle, i.e. print backtrace/exception/abort
+	- Decided not worth it since all of this can already be achieved in the log
+	  handler. If you want an assert failed breakpoint, just check for expr
+	  in the log handler and depending on level call a function to
+	  set a breakpoint on.
+	  See notes.md for some first concepts though

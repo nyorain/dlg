@@ -71,3 +71,29 @@ add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', langua
 #define dlg_tag(tags, code) dlg_tag_base(false, tags, code)
 #define dlg_tag_global(tags, code) dlg_tag_base(true, tags, code)
 ```
+
+## Custom assert macro handler
+
+```c
+// Can be specified to a custom assert handler/checker.
+// Will be called for every failed assertion. If it returns true,
+// the default failed assertion log will be done by dlg, otherwise
+// no further action will be taken.
+// Must have the signature 'bool (const char* expr)'.
+// The default (dlg__assertion_failed) just always returns false.
+// Useful as breakpoint.
+#ifndef DLG_ASSERT_FILTER
+	#define DLG_ASSERT_FILTER dlg__assertion_failed
+#endif
+
+bool dlg_assertion_failed(const char* expr);
+
+//
+#define DLG__CHECK_ASSERT(lvl, expr) \
+	(level > DLG_ASSERT_LEVEL && !(expr) && DLG_ASSERT_FILER(#expr))
+
+#define dlg_assertl(level, expr) if(DLG__CHECK_ASSERT(level, expr)) \
+	dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__, NULL, #expr)
+
+// ...
+```

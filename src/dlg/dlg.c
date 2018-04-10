@@ -307,16 +307,19 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 	if(features & dlg_output_time) {
 		time_t t = time(NULL);
 		struct tm tm_info;
-		// TODO: check for error
-#ifdef DLG_OS_WIN
-		localtime_s(&tm_info, &t);
-#else
-		localtime_r(&t, &tm_info);
-#endif
 
-		char timebuf[32];
-		strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
-		output(data, "%s", timebuf);
+#ifdef DLG_OS_WIN
+		if(localtime_s(&tm_info, &t)) {
+#else
+		if(!localtime_r(&t, &tm_info)) {
+#endif
+			output(data, "<DATE ERROR>");
+		} else {
+			char timebuf[32];
+			strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
+			output(data, "%s", timebuf);
+		}
+
 		first_meta = false;
 	}
 
@@ -399,21 +402,26 @@ static void print_size(void* size, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
 
-	// TODO: check for -1? we only use our own formats here
-	*((size_t*) size) += vsnprintf(NULL, 0, format, args);
+	int ret = vsnprintf(NULL, 0, format, args);
 	va_end(args);
+
+	if(ret > 0) {
+		*((size_t*) size) += ret;
+	}
 }
 
 static void print_buf(void* dbuf, const char* format, ...) {
-	struct buf* buf = dbuf;
+	struct buf* buf = (struct buf*) dbuf;
 	va_list args;
 	va_start(args, format);
 
-	// TODO: check for -1? we only use our own formats here
 	int printed = vsnprintf(buf->buf, *buf->size, format, args);
 	va_end(args);
-	*buf->size -= printed;
-	buf->buf += printed;
+
+	if(printed > 0) {
+		*buf->size -= printed;
+		buf->buf += printed;
+	}
 }
 
 void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
@@ -433,8 +441,7 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 static void print_stream(void* stream, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
-	// TODO: check for -1? we only use our own formats here
-	dlg_vfprintf(stream, format, args);
+	dlg_vfprintf((FILE*) stream, format, args);
 	va_end(args);
 }
 
@@ -454,7 +461,7 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 }
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
-	FILE* stream = data ? data : stdout;
+	FILE* stream = data ? (FILE*) data : stdout;
 	unsigned int features = dlg_output_file_line | dlg_output_newline |
 		dlg_output_threadsafe;
 
@@ -487,7 +494,6 @@ bool dlg_win_init_ansi(void) {
 #endif
 }
 
-// TODO: use size_t instead of unsigned int for size?
 // small dynamic vec/array implementation
 // Since the macros vec_init and vec_add[c]/vec_push might
 // change the pointers value it must not be referenced somewhere else.
@@ -495,7 +501,8 @@ bool dlg_win_init_ansi(void) {
 
 static void* vec_do_create(unsigned int typesize, unsigned int cap, unsigned int size) {
 	cap = (size > cap) ? size : cap;
-	unsigned int* begin = xalloc(2 * sizeof(unsigned int) + cap * typesize);
+	void* ptr = xalloc(2 * sizeof(unsigned int) + cap * typesize);
+	unsigned int* begin = (unsigned int*) ptr;
 	begin[0] = size * typesize;
 	begin[1] = cap * typesize;
 	return begin + 2;
@@ -513,7 +520,8 @@ static void* vec_do_add(void** vec, unsigned int size) {
 	unsigned int* begin = vec__raw(*vec);
 	unsigned int needed = begin[0] + size;
 	if(needed >= begin[1]) {
-		begin = xrealloc(begin, sizeof(unsigned int) * 2 + needed * 2);
+		void* ptr = xrealloc(begin, sizeof(unsigned int) * 2 + needed * 2);
+		begin = (unsigned int*) ptr;
 		begin[1] = needed * 2;
 		(*vec) = begin + 2;
 	}
@@ -526,7 +534,7 @@ static void* vec_do_add(void** vec, unsigned int size) {
 #define vec_create(type, size) (type*) vec_do_create(sizeof(type), size * 2, size)
 #define vec_create_reserve(type, size, capacity) (type*) vec_do_create(sizeof(type), capcity, size)
 #define vec_init(array, size) array = vec_do_create(sizeof(*array), size * 2, size)
-#define vec_init_reserve(array, size, capacity) array = vec_do_create(sizeof(*array), capacity, size)
+#define vec_init_reserve(array, size, capacity) *((void**) &array) = vec_do_create(sizeof(*array), capacity, size)
 #define vec_free(vec) (free((vec) ? vec__raw(vec) : NULL), vec = NULL)
 #define vec_erase_range(vec, pos, count) vec_do_erase(vec, pos * sizeof(*vec), count * sizeof(*vec))
 #define vec_erase(vec, pos) vec_do_erase(vec, pos * sizeof(*vec), sizeof(*vec))
@@ -541,11 +549,11 @@ static void* vec_do_add(void** vec, unsigned int size) {
 #define vec_last(vec) (vec[vec_size(vec) - 1])
 
 static struct dlg_data* dlg_create_data(void) {
-	struct dlg_data* data = xalloc(sizeof(struct dlg_data));
+	struct dlg_data* data = (struct dlg_data*) xalloc(sizeof(struct dlg_data));
 	vec_init_reserve(data->tags, 0, 20);
 	vec_init_reserve(data->pairs, 0, 20);
 	data->buffer_size = 100;
-	data->buffer = xalloc(data->buffer_size);
+	data->buffer = (char*) xalloc(data->buffer_size);
 	return data;
 }
 
@@ -561,7 +569,8 @@ static void dlg_free_data(void* ddata) {
 
 void dlg_add_tag(const char* tag, const char* func) {
 	struct dlg_data* data = dlg_data();
-	struct dlg_tag_func_pair* pair = vec_add(data->pairs);
+	struct dlg_tag_func_pair* pair = 
+		(struct dlg_tag_func_pair*) vec_add(data->pairs);
 	pair->tag = tag;
 	pair->func = func;
 }
@@ -611,7 +620,7 @@ const char* dlg__printf_format(const char* str, ...) {
 	char** buf = dlg_thread_buffer(&buf_size);
 	if(*buf_size <= (unsigned int) needed) {
 		*buf_size = (needed + 1) * 2;
-		*buf = xrealloc(*buf, *buf_size);
+		*buf = (char*) xrealloc(*buf, *buf_size);
 	}
 
 	vsnprintf(*buf, *buf_size, str, vlistcopy);
@@ -632,7 +641,6 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 
 	// push current global tags
 	for(size_t i = 0; i < vec_size(data->pairs); ++i) {
-		// TODO: really use strcmp here? does == not work?
 		const struct dlg_tag_func_pair pair = data->pairs[i];
 		if(pair.func == NULL || !strcmp(pair.func, func)) {
 			vec_push(data->tags, pair.tag);
