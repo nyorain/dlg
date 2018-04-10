@@ -1,6 +1,6 @@
 // this is the probably most important config macro (for more see config.hpp):
 // if this is defined all dlg macros will do nothing (literally nothing, they
-// will produce a single instruction).
+// will not produce a single instruction).
 // #define DLG_DISABLE
 
 // for other macros see the header of dlg.h
