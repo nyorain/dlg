@@ -15,10 +15,6 @@
 // There are examples and documentation.
 // Issue reports and contributions appreciated.
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // - CONFIG -
 // Define this macro as 1 to make all dlg macros have no effect at all
 #ifndef DLG_DISABLE
@@ -90,12 +86,13 @@ extern "C" {
 
 // - utility -
 // two methods needed since cplusplus does not support compound literals
-// and c does not support uniform initialization
+// and c does not support uniform initialization/initializer lists
 #ifdef __cplusplus
-	typedef const char* const DLG_STRL_[];
-	#define DLG_CREATE_TAGS(...) DLG_STRL_{DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
+	#include <initializer_list>
+	#define DLG_CREATE_TAGS(...) std::initializer_list<const char*> \
+		{DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}.begin()
 #else
-	#define DLG_CREATE_TAGS(...) (const char*[]) {DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) (const char* const[]) {DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
 #endif
 
 #ifdef __GNUC__
@@ -103,6 +100,11 @@ extern "C" {
 #else
 	#define DLG_PRINTF_ATTRIB(a, b)
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Represents the importance of a log/assertion call.
 enum dlg_level {

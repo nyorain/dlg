@@ -31,7 +31,7 @@ struct {
 	bool fire;
 	bool fired;
 } gdata = {
-	.check = 0,
+	.check = check_line,
 	.fired = false
 };
 
@@ -208,14 +208,14 @@ int main() {
 	// TODO: strictly speaking not correct but we know it works...
 	// both params should be same pointer to const char*
 	// this was done below the same (wrong) way...
-	EXPECT(dlg_remove_tag("lt", __func__)); 
+	EXPECT(dlg_remove_tag("lt", __func__));
 	EXPECT(dlg_remove_tag("gt", NULL));
 	EXPECT(!dlg_remove_tag("gt", __func__));
 	EXPECT(!dlg_remove_tag("gt", NULL));
 
 	// default
 	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS "d1", "d2", "d3", 
+	#define DLG_DEFAULT_TAGS "d1", "d2", "d3",
 
 	const char* t5[] = {"d1", "d2", "d3", NULL};
 	gdata.tags = t5;
@@ -237,7 +237,7 @@ int main() {
 	EXPECT(dlg_remove_tag("gt2", NULL));
 
 	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS 
+	#define DLG_DEFAULT_TAGS
 
 	gdata.tags = t1;
 	gdata.fired = false;
@@ -308,7 +308,7 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 
 	if(gdata.check & check_string) {
 		if((string == NULL) != (gdata.string == NULL)) {
-			printf("$$$ handler: Invalid string (validness) %d, expected %d [%d]\n", 
+			printf("$$$ handler: Invalid string (validness) %d, expected %d [%d]\n",
 				(string != NULL), (gdata.string != NULL), origin->line);
 		} else if(string && strcmp(string, gdata.string)) {
 			printf("$$$ handler: invalid string '%s' [%d]\n", string, origin->line);
@@ -317,7 +317,7 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 
 	if(gdata.check & check_expr) {
 		if((origin->expr == NULL) != (gdata.expr == NULL)) {
-			printf("$$$ handler: Invalid expr (ptr) %d, expected %d [%d]\n", 
+			printf("$$$ handler: Invalid expr (ptr) %d, expected %d [%d]\n",
 				(origin->expr != NULL), (gdata.expr != NULL), origin->line);
 		} else if(origin->expr && strcmp(origin->expr, gdata.expr)) {
 			printf("$$$ handler: invalid expr '%s' [%d]\n", origin->expr, origin->line);
