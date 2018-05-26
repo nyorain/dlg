@@ -508,8 +508,8 @@ static void* vec_do_create(unsigned int typesize, unsigned int cap, unsigned int
 	return begin + 2;
 }
 
+// NOTE: can be more efficient if we are allowed to reorder vector
 static void vec_do_erase(void* vec, unsigned int pos, unsigned int size) {
-	// TODO: can be more efficient if we are allowed to reorder vector
 	unsigned int* begin = vec__raw(vec);
 	begin[0] -= size;
 	char* buf = (char*) vec;
@@ -569,7 +569,7 @@ static void dlg_free_data(void* ddata) {
 
 void dlg_add_tag(const char* tag, const char* func) {
 	struct dlg_data* data = dlg_data();
-	struct dlg_tag_func_pair* pair = 
+	struct dlg_tag_func_pair* pair =
 		(struct dlg_tag_func_pair*) vec_add(data->pairs);
 	pair->tag = tag;
 	pair->func = func;

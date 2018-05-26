@@ -19,7 +19,7 @@
 - [x] decide on whether to catch exceptions from assert expressions. Config variable?
 	- Yeah, don't do it. We are c now
 - [x] make dlg.c valid c++ (mainly casting issues atm)
-- [ ] update README picture
+- [x] update README picture
 - [ ] Fix all todos in dlg.c (mainly error handling questions)
 	- [ ] Check GetLastError with winapi functions?
 - [x] contrib file that implements android log handler (using android liblog)
