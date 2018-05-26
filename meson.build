@@ -1,5 +1,5 @@
 project('dlg', ['c', 'cpp'],
-	version: '0.2.1',
+	version: '0.2.2',
 	default_options: [
 		'c_std=c11',
 		'cpp_std=c++11',

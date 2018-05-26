@@ -1,3 +1,5 @@
+=== Release of v0.2.2 ===
+
 2018-5-20
 	Rework the tags array building macro due to new errors in gcc8.
 	Seems like the C++ way was undefined behavior before, now uses

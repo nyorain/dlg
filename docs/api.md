@@ -269,7 +269,7 @@ void dlg_escape_sequence(const struct dlg_style style, char buf[12]);
 // The reset style escape sequence.
 const char* dlg_reset_sequence;
 
-// Just returns true without other effect on non-windows systems or if dlg 
+// Just returns true without other effect on non-windows systems or if dlg
 // was compiled without the win_console option.
 // On windows tries to set the console mode to ansi to make escape sequences work.
 // This works only on newer windows 10 versions. Returns false on error.
