@@ -500,11 +500,11 @@ bool dlg_win_init_ansi(void) {
 #define vec__raw(vec) (((unsigned int*) vec) - 2)
 
 static void* vec_do_create(unsigned int typesize, unsigned int cap, unsigned int size) {
-	cap = (size > cap) ? size : cap;
-	void* ptr = xalloc(2 * sizeof(unsigned int) + cap * typesize);
+	unsigned long a = (size > cap) ? size : cap;
+	void* ptr = xalloc(2 * sizeof(unsigned int) + a * typesize);
 	unsigned int* begin = (unsigned int*) ptr;
 	begin[0] = size * typesize;
-	begin[1] = cap * typesize;
+	begin[1] = a * typesize;
 	return begin + 2;
 }
 

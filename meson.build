@@ -37,8 +37,6 @@ if meson.get_compiler('c').get_id() == 'msvc'
 	# make utf-8 examples work; ignore unused parameter and
 	# constant conditional expression warnings and a plainly wrong warning
 	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090']
-else
-	common_args += '-Wno-unused-parameter'
 endif
 
 if win_console
