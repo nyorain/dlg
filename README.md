@@ -20,7 +20,7 @@ There are 3 headers:
 You can either build dlg.c as library or include it directly into your project
 (nothing else needed).
 The name stands for some kind of super clever word mixture of the words 'debug'
-and 'log' (think of something yourself, duh). Uses meson as built system, but
+and 'log' (think of something yourself, duh). Uses meson as build system, but
 you don't really need a build system for this after all.
 
 ## Show me something fancy already
