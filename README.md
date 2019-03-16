@@ -49,4 +49,4 @@ having read the example though:
 Note though that dlg can be used without weird dummy messages as well.
 Building the sample can be enabled by passing the 'sample' argument as true to meson (meson <build dir> -Dsample=true).
 
-__Contributions of all kind are welcome, this is nothing too serious though (kinda like life)__
+__Contributions of all kind are welcome, this is nothing too serious though__
