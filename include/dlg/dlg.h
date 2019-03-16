@@ -150,32 +150,49 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// The default handler is dlg_default_output (see its doc for more info).
 	// If using c++ make sure the registered handler cannot throw (since this is UB)
 	// e.g. by wrapping everything into a try-catch blog.
-	inline void dlg_set_handler(dlg_handler handler, void* data) {}
+	inline void dlg_set_handler(dlg_handler handler, void* data) {
+		(void) handler;
+		(void) data;
+	}
 
 	// The default output handler.
 	// Only use this to reset the output handler, prefer to use
 	// dlg_generic_output (from output.h) which this function simply calls.
 	// It also flushes the stream used and correctly outputs even from multiple threads.
-	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {}
+	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {
+		(void) o;
+		(void) str;
+		(void) data;
+	}
 
 	// Adds the given tag associated with the given function to the thread specific list.
 	// If func is not NULL the tag will only applied to calls from the same function.
 	// Remove the tag again calling dlg_remove_tag (with exactly the same pointers!).
 	// Does not check if the tag is already present.
-	inline void dlg_add_tag(const char* tag, const char* func) {}
+	inline void dlg_add_tag(const char* tag, const char* func) {
+		(void) tag;
+		(void) func;
+	}
 
 	// Removes a tag added with dlg_add_tag (has no effect for tags no present).
 	// The pointers must be exactly the same pointers that were supplied to dlg_add_tag,
 	// this function will not check using strcmp. When the same tag/func combination
 	// is added multiple times, this function remove exactly one candidate, it is
 	// undefined which. Returns whether a tag was found (and removed).
-	inline bool dlg_remove_tag(const char* tag, const char* func) { return true; }
+	inline bool dlg_remove_tag(const char* tag, const char* func) {
+		(void) tag;
+		(void) func;
+		return true;
+	}
 
 	// Returns the thread-specific buffer and its size for dlg.
 	// The buffer should only be used by formatting functions.
 	// The buffer can be reallocated and the size changed, just make sure
 	// to update both values correctly.
-	inline char** dlg_thread_buffer(size_t** size) { return NULL; }
+	inline char** dlg_thread_buffer(size_t** size) {
+		(void) size;
+		return NULL;
+	}
 
 #else // DLG_DISABLE
 	#define dlg_log(level, ...) if(level >= DLG_LOG_LEVEL) \

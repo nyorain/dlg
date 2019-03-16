@@ -15,6 +15,9 @@ struct {
 unsigned int gerror = 0;
 
 void custom_handler(const struct dlg_origin* origin, const char* string, void* data) {
+	(void) origin;
+	(void) string;
+	(void) data;
 	gdata.fired = true;
 }
 

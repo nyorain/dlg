@@ -3,3 +3,4 @@ a.exe
 build
 old
 *.sublime*
+android_cross.txt
