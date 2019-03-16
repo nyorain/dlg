@@ -1,5 +1,6 @@
 project('dlg', ['c', 'cpp'],
 	version: '0.2.2',
+	meson_version: '>=0.46.0',
 	default_options: [
 		'c_std=c11',
 		'cpp_std=c++11',
@@ -23,10 +24,10 @@ add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', langua
 headers = files([
 	'include/dlg/output.h',
 	'include/dlg/dlg.h',
-	'include/dlg/dlg.hpp'
+	'include/dlg/dlg.hpp',
 ])
 
-# TODO: import args?
+# TODO: import args (dllimport)?
 # default warn settings
 dlg_args = []
 common_args = []
@@ -40,11 +41,11 @@ if meson.get_compiler('c').get_id() == 'msvc'
 endif
 
 if win_console
-  dlg_args += '-DDLG_WIN_CONSOLE=1'
+	dlg_args += '-DDLG_WIN_CONSOLE=1'
 endif
 
 if default_output_always_color
-  dlg_args += '-DDLG_DEFAULT_OUTPUT_ALWAYS_COLOR=1'
+	dlg_args += '-DDLG_DEFAULT_OUTPUT_ALWAYS_COLOR=1'
 endif
 
 # build library
@@ -57,9 +58,18 @@ if build_library
 		install: true,
 		include_directories: inc)
 	libs = [dlg_lib]
+
+	pkg = import('pkgconfig')
+	pkg.generate(
+		libs,
+		name: 'dlg',
+		filebase: 'dlg',
+		subdirs: ['.', 'dlg'],
+		version: meson.project_version(),
+		description: 'C/C++ logging and debug library')
 else
 	sources = ['src/dlg/dlg.c']
-	deps = [threads]
+	deps = [dep_threads]
 endif
 
 # dependency
@@ -91,13 +101,3 @@ endif
 
 # install
 install_headers(headers, subdir: 'dlg')
-
-# pkgconfig
-pkg = import('pkgconfig')
-pkg.generate(
-	name: 'dlg',
-	filebase: 'dlg',
-	libraries: libs,
-	subdirs: ['.', 'dlg'],
-	version: meson.project_version(),
-	description: 'C/C++ logging and debug library')

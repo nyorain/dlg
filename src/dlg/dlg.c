@@ -128,7 +128,9 @@ static struct dlg_data* dlg_create_data();
 	}
 
 	// TODO: error handling
-	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* Parameter, void** lpContext) {
+	static BOOL CALLBACK dlg_init_fls(PINIT_ONCE io, void* param, void** lpContext) {
+		(void) io;
+		(void) param;
 		**((DWORD**) lpContext) = FlsAlloc(dlg_fls_destructor);
 		return true;
 	}
