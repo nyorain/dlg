@@ -129,7 +129,7 @@ struct dlg_origin {
 // Type of the output handler, see dlg_set_handler.
 typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, void* data);
 
-#if DLG_DISABLE
+#ifdef DLG_DISABLE
 	// Tagged/Untagged logging with variable level
 	// Tags must always be in the format `("tag1", "tag2")` (including brackets)
 	#define dlg_log(level, ...)
