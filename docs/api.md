@@ -110,13 +110,21 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 
 // Sets the handler that is responsible for formatting and outputting log calls.
 // This function is not thread safe and the handler is set globally.
-// The handler must not change dlg tags or call a dlg macro theirself.
-// Can also be used various other things such as dealing with critical failed
-// assertions or filtering calls based on the passed tags.
+// The handler itself must not change dlg tags or call a dlg macro.
+// The handler can also be used for various other things such as dealing
+// with failed assertions or filtering calls based on the passed tags.
 // The default handler is dlg_default_output (see its doc for more info).
-// If using c++ make sure the registered handler cannot throw (since this is UB)
-// e.g. by wrapping everything into a try-catch blog.
+// If using c++ make sure the registered handler cannot throw e.g. by
+// wrapping everything into a try-catch blog.
 void dlg_set_handler(dlg_handler handler, void* data);
+
+// Returns the currently active dlg handler and sets `data` to
+// its user data pointer. `data` must not be NULL.
+// Useful to create handler chains.
+// This function is not threadsafe, i.e. retrieving the handler while
+// changing it from another thread is unsafe.
+// See `dlg_set_handler`.
+dlg_handler dlg_get_handler(void** data);
 
 // The default output handler. Pass a valid FILE* as stream or NULL to use stderr/stdout.
 // Simply calls dlg_generic_output from dlg/output.h with the file_line feature enabled,

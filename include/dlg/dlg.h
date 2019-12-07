@@ -1,9 +1,9 @@
-// Copyright (c) 2018 nyorain
+// Copyright (c) 2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-#ifndef _DLG_DLG_H_
-#define _DLG_DLG_H_
+#ifndef INC_DLG_DLG_H_
+#define INC_DLG_DLG_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,10 +16,8 @@
 // Issue reports and contributions appreciated.
 
 // - CONFIG -
-// Define this macro as 1 to make all dlg macros have no effect at all
-#ifndef DLG_DISABLE
-		#define DLG_DISABLE 0
-#endif
+// Define this macro to make all dlg macros have no effect at all
+// #define DLG_DISABLE
 
 // the log/assertion levels below which logs/assertions are ignored
 // defaulted depending on the NDEBUG macro
@@ -74,10 +72,11 @@
 #endif
 
 // Only overwrite (i.e. predefine) this if you know what you are doing.
-// Could e.g. on windows when compiling with msvc and using a shared library of dlg
-// be set to __declspec(import)
+// On windows this is used to add the dllimport specified.
+// If you are using the static version of dlg (on windows) define
+// DLG_STATIC before including dlg.h
 #ifndef DLG_API
-	#ifdef _MSC_VER
+ 	#if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(DLG_STATIC)
 		#define DLG_API __declspec(dllimport)
 	#else
 		#define DLG_API
@@ -144,15 +143,26 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 
 	// Sets the handler that is responsible for formatting and outputting log calls.
 	// This function is not thread safe and the handler is set globally.
-	// The handler must not change dlg tags or call a dlg macro theirself.
-	// Can also be used various other things such as dealing with critical failed
-	// assertions or filtering calls based on the passed tags.
+	// The handler itself must not change dlg tags or call a dlg macro.
+	// The handler can also be used for various other things such as dealing
+	// with failed assertions or filtering calls based on the passed tags.
 	// The default handler is dlg_default_output (see its doc for more info).
-	// If using c++ make sure the registered handler cannot throw (since this is UB)
-	// e.g. by wrapping everything into a try-catch blog.
+	// If using c++ make sure the registered handler cannot throw e.g. by
+	// wrapping everything into a try-catch blog.
 	inline void dlg_set_handler(dlg_handler handler, void* data) {
 		(void) handler;
 		(void) data;
+	}
+
+	// Returns the currently active dlg handler and sets `data` to
+	// its user data pointer. `data` must not be NULL.
+	// Useful to create handler chains.
+	// This function is not threadsafe, i.e. retrieving the handler while
+	// changing it from another thread is unsafe.
+	// See `dlg_set_handler`.
+	inline dlg_handler dlg_get_handler(void** data) {
+		*data = NULL;
+		return NULL;
 	}
 
 	// The default output handler.
@@ -214,7 +224,8 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
 	DLG_API void dlg_set_handler(dlg_handler handler, void* data);
-	DLG_API void dlg_default_output(const struct dlg_origin* origin, const char* string, void* stream);
+	DLG_API dlg_handler dlg_get_handler(void** data);
+	DLG_API void dlg_default_output(const struct dlg_origin*, const char* string, void*);
 	DLG_API void dlg_add_tag(const char* tag, const char* func);
 	DLG_API bool dlg_remove_tag(const char* tag, const char* func);
 	DLG_API char** dlg_thread_buffer(size_t** size);
@@ -222,8 +233,8 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	// - Private interface: not part of the abi/api but needed in macros -
 	// Formats the given format string and arguments as printf would, uses the thread buffer.
 	DLG_API const char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
-	DLG_API void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, int line,
-		const char* func, const char* string, const char* expr);
+	DLG_API void dlg__do_log(enum dlg_level lvl, const char* const*, const char*, int,
+		const char*, const char*, const char*);
 	DLG_API const char* dlg__strip_root_path(const char* file, const char* base);
 
 #endif // DLG_DISABLE

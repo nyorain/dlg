@@ -1,9 +1,9 @@
-// Copyright (c) 2018 nyorain
+// Copyright (c) 2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
 #define _XOPEN_SOURCE
-#define _POSIX_C_SOURCE 201710L
+#define _POSIX_C_SOURCE 200809L
 #define _WIN32_WINNT 0x0600
 
 #include <dlg/output.h>
@@ -602,6 +602,11 @@ void dlg_set_handler(dlg_handler handler, void* data) {
 	g_data = data;
 }
 
+dlg_handler dlg_get_handler(void** data) {
+	*data = g_data;
+	return g_handler;
+}
+
 const char* dlg__printf_format(const char* str, ...) {
 	va_list vlist;
 	va_start(vlist, str);
@@ -674,18 +679,25 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 	}
 
 	const char* saved = file;
-	if(*file == '.') {
+	if(*file == '.') { // relative path detected
 		while(*(++file) == '.' || *file == '/' || *file == '\\');
-		if(*file == '\0') {
+		if(*file == '\0') { // weird case: purely relative path without file
 			return saved;
 		}
 
 		return file;
 	}
 
-	if(base && *base != '\0' && *file != '\0') {
-		while(*(++file) != '\0' && *(++base) != '\0');
-		if(*file == '\0') {
+	// strip base from file if it is given
+	if(base) {
+		char fn = *file;
+		char bn = *base;
+		while(bn != '\0' && fn == bn) {
+			fn = *(++file);
+			bn = *(++base);
+		}
+
+		if(fn == '\0' || bn != '\0') { // weird case: base isn't prefix of file
 			return saved;
 		}
 	}

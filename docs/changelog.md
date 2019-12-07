@@ -1,3 +1,14 @@
+2019-12-07
+	- Add dlg_get_handler to allow handler chaining for debugging
+	  [api addition]
+	- dlg.h previously required DLG_DISABLE to be defined to 1, this
+	  was already documented differently in api.md and examples.
+	  Now it's enough if DLG_DISABLE is defined at all
+	  [breaking change]
+	- rework dlg__strip_root_path to actually check for prefix.
+	  If the base path isn't a prefix of the file, we won't strip it.
+	- change naming of header guard to not start with underscore
+
 === Release of v0.2.2 ===
 
 2018-5-20

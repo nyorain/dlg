@@ -92,6 +92,12 @@ if build_sample
 		c_args: common_args,
 		dependencies: dlg_dep)
 	test('sample_c', sample_c)
+
+	sample_chain = executable('sample-chain',
+		'docs/examples/chain.c',
+		c_args: common_args,
+		dependencies: dlg_dep)
+	test('sample_chain', sample_chain)
 endif
 
 # tests

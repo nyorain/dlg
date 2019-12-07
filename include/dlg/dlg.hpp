@@ -1,9 +1,9 @@
-// Copyright (c) 2018 nyorain
+// Copyright (c) 2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-#ifndef _DLG_DLG_HPP_
-#define _DLG_DLG_HPP_
+#ifndef INC_DLG_DLG_HPP_
+#define INC_DLG_DLG_HPP_
 
 
 // By default this header automatically uses a different, typesafe formatting

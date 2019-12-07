@@ -1,9 +1,9 @@
-// Copyright (c) 2018 nyorain
+// Copyright (c) 2019 nyorain
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
-#ifndef _DLG_OUTPUT_H_
-#define _DLG_OUTPUT_H_
+#ifndef INC_DLG_OUTPUT_H_
+#define INC_DLG_OUTPUT_H_
 
 #include <dlg/dlg.h>
 #include <stdio.h>
@@ -132,7 +132,7 @@ DLG_API void dlg_escape_sequence(struct dlg_style style, char buf[12]);
 // The reset style escape sequence.
 DLG_API extern const char* dlg_reset_sequence;
 
-// Just returns true without other effect on non-windows systems or if dlg 
+// Just returns true without other effect on non-windows systems or if dlg
 // was compiled without the win_console option.
 // On windows tries to set the console mode to ansi to make escape sequences work.
 // This works only on newer windows 10 versions. Returns false on error.
