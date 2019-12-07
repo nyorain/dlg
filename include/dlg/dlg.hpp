@@ -32,7 +32,7 @@
 // Note that checking is defined separately from DLG_DISABLE.
 // By default this is defined to 1 if NDEBUG is defined OR DLG_DISABLe is 1.
 #ifndef DLG_DISABLE_CHECK
-	#if defined(NDEBUG) || DLG_DISABLE
+	#if defined(NDEBUG) || defined(DLG_DISABLE)
 		#define DLG_DISABLE_CHECK 1
 	#else
 		#define DLG_DISABLE_CHECK 0
