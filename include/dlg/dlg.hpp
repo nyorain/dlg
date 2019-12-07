@@ -76,7 +76,7 @@ protected:
 	const char* func_;
 };
 
-#if DLG_DISABLE
+#ifdef DLG_DISABLE
 	// Constructs a dlg::TagsGuard in the current scope, passing correctly the
 	// current function, i.e. only dlg calls made from other functions
 	// that are called in the current scope will not use the given tags.
