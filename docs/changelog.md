@@ -1,3 +1,15 @@
+2020-3-31
+	Rework the meson option specifying how dlg should be built.
+	Also automatically adds the needed definition for a static
+	library now to the meson dependency.
+	We explicitly decided against adding a config file defining
+	this option (which would allow to automatically get the
+	static/shared stuff correct even outside meson) since that
+	is only really needed on windows anyways (where projects
+	using dlg will probably use it as meson subproject
+	or know what they are doing) and an extra config file
+	just for this isn't worth the additional complexity.
+
 2019-12-07
 	- Add dlg_get_handler to allow handler chaining for debugging
 	  [api addition]

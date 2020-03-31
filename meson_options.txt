@@ -1,7 +1,12 @@
-# whether to build libdlg
-# otherwise adds the c file in the meson dependency
-# pkgconfig file only created, when library is built
-option('library', type: 'boolean', value : true)
+# How to build/include dlg.
+# 'file': does not build a library but simply includes
+# the file as source in the meson dependency.
+# Otherwise builds a library. 'auto' selects
+# a static or dynamic library based on the default meson config
+option('libtype', 
+    type: 'combo', 
+    choices: ['auto', 'shared', 'static', 'file'], 
+    value : 'auto')
 
 option('sample', type: 'boolean', value: false) # build the sample?
 option('tests', type: 'boolean', value: false) # build the tests?

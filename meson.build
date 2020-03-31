@@ -7,7 +7,7 @@ project('dlg', ['c', 'cpp'],
 		'warning_level=3',
 		'werror=true'])
 
-build_library = get_option('library')
+libtype = get_option('libtype')
 build_sample = get_option('sample')
 tests = get_option('tests')
 win_console = get_option('win_console')
@@ -33,8 +33,6 @@ dlg_args = []
 common_args = []
 deps = []
 if meson.get_compiler('c').get_id() == 'msvc'
-	dlg_args += '-DDLG_API=__declspec(dllexport)'
-
 	# make utf-8 examples work; ignore unused parameter and
 	# constant conditional expression warnings and a plainly wrong warning
 	common_args += ['/utf-8', '/wd4100', '/wd4127', '/wd4090']
@@ -50,10 +48,30 @@ endif
 
 # build library
 dep_threads = dependency('threads')
-if build_library
-	dlg_lib = library('dlg',
+dep_args = []
+if libtype != 'file'
+	if libtype == 'auto'
+		if get_option('default_library') == 'static'
+			libtype = 'static'
+		else
+			libtype = 'shared'
+		endif
+	endif
+
+	if libtype == 'shared'
+		libtype = 'shared_library'
+		if host_machine.system() == 'windows'
+			dlg_args += '-DDLG_API=__declspec(dllexport)'
+		endif
+	elif libtype == 'static'
+		libtype = 'static_library'
+		dep_args += '-DDLG_STATIC'
+	endif
+
+	dlg_lib = build_target('dlg',
 		'src/dlg/dlg.c',
-		c_args: dlg_args + common_args,
+		c_args: dlg_args + common_args + dep_args,
+		target_type: libtype,
 		dependencies: dep_threads,
 		install: true,
 		include_directories: inc)
@@ -75,6 +93,7 @@ endif
 # dependency
 dlg_dep = declare_dependency(
 	include_directories: inc,
+	compile_args: dep_args,
 	link_with: libs,
 	dependencies: deps,
 	sources: sources)
