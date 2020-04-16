@@ -7,7 +7,7 @@ project('dlg', ['c', 'cpp'],
 		'warning_level=3',
 		'werror=true'])
 
-libtype = get_option('libtype')
+buildlib = get_option('buildlib')
 build_sample = get_option('sample')
 tests = get_option('tests')
 win_console = get_option('win_console')
@@ -49,29 +49,19 @@ endif
 # build library
 dep_threads = dependency('threads')
 dep_args = []
-if libtype != 'file'
-	if libtype == 'auto'
-		if get_option('default_library') == 'static'
-			libtype = 'static'
-		else
-			libtype = 'shared'
-		endif
-	endif
 
-	if libtype == 'shared'
-		libtype = 'shared_library'
+if buildlib
+	if get_option('default_library') == 'shared'
 		if host_machine.system() == 'windows'
 			dlg_args += '-DDLG_API=__declspec(dllexport)'
 		endif
 	elif libtype == 'static'
-		libtype = 'static_library'
 		dep_args += '-DDLG_STATIC'
 	endif
 
-	dlg_lib = build_target('dlg',
+	dlg_lib = library('dlg',
 		'src/dlg/dlg.c',
 		c_args: dlg_args + common_args + dep_args,
-		target_type: libtype,
 		dependencies: dep_threads,
 		install: true,
 		include_directories: inc)

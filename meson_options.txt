@@ -1,12 +1,7 @@
-# How to build/include dlg.
-# 'file': does not build a library but simply includes
-# the file as source in the meson dependency.
-# Otherwise builds a library. 'auto' selects
-# a static or dynamic library based on the default meson config
-option('libtype', 
-    type: 'combo', 
-    choices: ['auto', 'shared', 'static', 'file'], 
-    value : 'auto')
+# Whether to build a library
+# If this is false, will just include dlg.c as source in the
+# meson dependency (making this still usable as suproject)
+option('buildlib', type: 'boolean', value: true)
 
 option('sample', type: 'boolean', value: false) # build the sample?
 option('tests', type: 'boolean', value: false) # build the tests?
