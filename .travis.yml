@@ -1,23 +1,19 @@
-sudo: required
+os: linux
 
-language: cpp
+services:
+- docker
 
-notifications:
-  email: false
-
-compiler:
-  - gcc
-  - clang
-
-arch:
+archlinux:
+  repos:
+  - papyros=http://dash.papyros.io/repos/$repo/$arch
   packages:
-    - meson
-    - ninja
-    - valgrind
+  - meson
+  - ninja
+  - valgrind
   script:
     - meson build -Dtests=true -Dsample=true
     - ninja -C build
     - meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
 
 script:
-  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
+- "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
