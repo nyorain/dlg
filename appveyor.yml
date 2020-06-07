@@ -19,7 +19,7 @@ install:
     # init msvc
   - cmd: if %compiler%==msvc2015 ( call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %arch% )
     # install ninja
-  - appveyor-retry appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.6.0/ninja-win.zip" -FileName ninja.zip
+  - appveyor-retry appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip" -FileName ninja.zip
   - 7z x ninja.zip -oC:\ninja > nul
     # update the path and show information; TODO: 64 bit python?
   - set PATH=C:\ninja;C:\mingw\mingw64\bin;C:\Python36\scripts;C:Python36;%PATH%
