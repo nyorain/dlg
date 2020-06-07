@@ -1,13 +1,14 @@
 os: linux
 dist: bionic
-language: cpp
+language: python
 
-compiler:
-  - clang
-  - gcc
+matrix:
+  include:
+    - env: CC=gcc
+    - env: CC=clang
 
 install:
-  - pip install meson ninja
+  - pip3 install meson ninja
 
 script:
   - meson build -Dtests=true -Dsample=true
