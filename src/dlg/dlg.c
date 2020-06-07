@@ -673,6 +673,23 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 	vec_clear(data->tags);
 }
 
+#ifdef _MSC_VER
+// shitty msvc compatbility
+// meson gives us sane paths (separated by '/') while one MSVC,
+// __FILE__ contains a '\\' separator.
+static bool path_same(char a, char b) {
+	return (a == b) ||
+		(a == '/' && b == '\\') ||
+		(a == '\\ && b == '/');
+}
+#else
+
+static inline bool path_same(char a, char b) {
+	return a == b;
+}
+
+#endif
+
 const char* dlg__strip_root_path(const char* file, const char* base) {
 	if(!file) {
 		return NULL;
@@ -692,7 +709,7 @@ const char* dlg__strip_root_path(const char* file, const char* base) {
 	if(base) {
 		char fn = *file;
 		char bn = *base;
-		while(bn != '\0' && fn == bn) {
+		while(bn != '\0' && path_same(fn, bn)) {
 			fn = *(++file);
 			bn = *(++base);
 		}
