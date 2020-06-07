@@ -272,11 +272,18 @@ int main() {
 		printf("$$$ dlg init ansi console, the following might get weird\n");
 
 	printf(" - There should follow some utf-8 chars\n");
+
+	// TODO: fix this on windows
+#ifndef _WIN32
 	dlg_fprintf(stdout, u8"Ŝǿмẽ śạოрłё ẶŠČÌĬ-ŧē×ť (%s, אָǒť %s ãşçĩị...): %d\n", "ẃέłĺ", "all", 42);
+#endif
 
 	printf(" - The following line should be bold red, using utf-8 chars\n");
 	struct dlg_style mstyle = { .style = dlg_text_style_bold, .fg = dlg_color_red, .bg = dlg_color_none };
+
+#ifndef _WIN32
 	dlg_styled_fprintf(stdout, mstyle, u8"ầŝƒđĵšҝďƒĵqשׂęрốґμĝĺ (<%s> in dingus-evlish)\n", "it's some kind of evlish");
+#endif
 
 	// return count of total errors
 	return gerror;
