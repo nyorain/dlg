@@ -92,7 +92,10 @@ int main() {
 	dlg_set_handler(&custom_handler, &gdata);
 	check_file = fopen("dlg_test_output.txt", "w");
 	EXPECT(!dlg_is_tty(check_file));
+
+#ifndef _MSC_VER
 	dlg_fprintf(check_file, u8"beginning of (some utf-8: äüß) %s", "test output file\n");
+#endif
 
 	// checks
 	// logging

@@ -9,6 +9,7 @@ matrix:
 
 install:
   - pip3 install meson ninja
+  - sudo apt-get -y install valgrind
 
 script:
   - meson build -Dtests=true -Dsample=true

@@ -34,4 +34,4 @@ build_script:
   - ninja -C build
 
 test_script:
-  - meson test -C build
+  - meson test -C build --print-errorlogs
