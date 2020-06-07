@@ -19,8 +19,10 @@ sources = []
 libs = []
 
 # base path, correctly escaped on windows
-source_root = meson.source_root().split('\\')
-add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', language: 'c')
+base_path = join_paths([meson.source_root(), ''])
+add_project_arguments('-DDLG_BASE_PATH="' + base_path + '"', language: ['c', 'cpp'])
+message('DLG_BASE_PATH: ' + base_path)
+
 headers = files([
 	'include/dlg/output.h',
 	'include/dlg/dlg.h',

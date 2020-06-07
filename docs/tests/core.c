@@ -49,6 +49,8 @@ void foo_log();
 void foo_assert();
 
 int main() {
+	printf("__FILE__: %s\n", __FILE__);
+
 	dlg_log(dlg_level_trace, "trace %d", 1);
 	dlg_log(dlg_level_debug, "debug %d", 1);
 	dlg_log(dlg_level_info, "info %d", 1);
@@ -93,9 +95,7 @@ int main() {
 	check_file = fopen("dlg_test_output.txt", "w");
 	EXPECT(!dlg_is_tty(check_file));
 
-#ifndef _MSC_VER
 	dlg_fprintf(check_file, u8"beginning of (some utf-8: äüß) %s", "test output file\n");
-#endif
 
 	// checks
 	// logging
@@ -276,15 +276,12 @@ int main() {
 
 	printf(" - There should follow some utf-8 chars\n");
 
-	// TODO: fix this on windows
-#ifndef _MSC_VER
 	struct dlg_style mstyle = { .style = dlg_text_style_bold, .fg = dlg_color_red, .bg = dlg_color_none };
 	dlg_fprintf(stdout, u8"Ŝǿмẽ śạოрłё ẶŠČÌĬ-ŧē×ť (%s, אָǒť %s ãşçĩị...): %d\n", "ẃέłĺ", "all", 42);
 
 	printf(" - The following line should be bold red, using utf-8 chars\n");
 
 	dlg_styled_fprintf(stdout, mstyle, u8"ầŝƒđĵšҝďƒĵqשׂęрốґμĝĺ (<%s> in dingus-evlish)\n", "it's some kind of evlish");
-#endif
 
 	// return count of total errors
 	return gerror;
