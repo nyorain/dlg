@@ -6,7 +6,7 @@ compiler:
   - gcc
 
 before_install:
-  - sudo apt-get -y install meson ninja valgrind
+  - sudo apt-get -y install meson ninja-build valgrind
 
 script:
   - meson build -Dtests=true -Dsample=true
