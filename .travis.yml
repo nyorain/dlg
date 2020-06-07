@@ -1,19 +1,14 @@
-os: linux
+sudo: required
+language: cpp
 
-services:
-- docker
+compiler:
+  - clang
+  - gcc
 
-archlinux:
-  repos:
-  - papyros=http://dash.papyros.io/repos/$repo/$arch
-  packages:
-  - meson
-  - ninja
-  - valgrind
-  script:
-    - meson build -Dtests=true -Dsample=true
-    - ninja -C build
-    - meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
+before_install:
+  - sudo apt-get -y install meson ninja valgrind
 
 script:
-- "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
+  - meson build -Dtests=true -Dsample=true
+  - ninja -C build
+  - meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
