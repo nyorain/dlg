@@ -680,7 +680,7 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 static bool path_same(char a, char b) {
 	return (a == b) ||
 		(a == '/' && b == '\\') ||
-		(a == '\\ && b == '/');
+		(a == '\\' && b == '/');
 }
 #else
 
