@@ -53,7 +53,8 @@ dep_threads = dependency('threads')
 dep_args = []
 
 if buildlib
-	if get_option('default_library') == 'shared'
+	libtype = get_option('default_library')
+	if libtype == 'shared'
 		if host_machine.system() == 'windows'
 			dlg_args += '-DDLG_API=__declspec(dllexport)'
 		endif
