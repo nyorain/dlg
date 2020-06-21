@@ -30,7 +30,7 @@ install:
 build_script:
     # TODO: possible to automate non-ninja backend?
   - echo Building on %arch% with %compiler%
-  - meson --backend=ninja -Dtests=true -Dsample=true build
+  - meson --backend=ninja --default-library=both -Dtests=true -Dsample=true build
   - ninja -C build
 
 test_script:

@@ -54,21 +54,56 @@ dep_args = []
 
 if buildlib
 	libtype = get_option('default_library')
-	if libtype == 'shared'
-		if host_machine.system() == 'windows'
-			dlg_args += '-DDLG_API=__declspec(dllexport)'
-		endif
-	elif libtype == 'static'
-		dep_args += '-DDLG_STATIC'
-	endif
 
-	dlg_lib = library('dlg',
-		'src/dlg/dlg.c',
-		c_args: dlg_args + common_args + dep_args,
-		dependencies: dep_threads,
-		install: true,
-		include_directories: inc)
-	libs = [dlg_lib]
+	# TODO: temporary workaround, see https://github.com/mesonbuild/meson/issues/3304
+	# The problem is that on windows, function symbols must be declared
+	# differently when building a static library.
+	if libtype == 'both'
+		static_args = dlg_args + ['-DDLG_STATIC']
+		shared_args = dlg_args
+		if host_machine.system() == 'windows'
+			shared_args += ['-DDLG_API=__declspec(dllexport)']
+		endif
+
+		shared_lib = shared_library('dlg',
+			'src/dlg/dlg.c',
+			c_args: shared_args + common_args + dep_args,
+			dependencies: dep_threads,
+			install: true,
+			include_directories: inc)
+
+		static_lib = static_library('dlg',
+			'src/dlg/dlg.c',
+			c_args: static_args + common_args + dep_args,
+			dependencies: dep_threads,
+			install: true,
+			include_directories: inc)
+
+		# when both library types are built, the declared dependency
+		# and generate pkgconfig file will contain the shared library,
+		# since that's the default way of linking in c.
+		# That's also why we don't add 'DLG_STATIC' to dep_args
+		message('When building both libraries, the shared one will be ' +
+			'used by default for dependency and pkgconfig file')
+		libs += [shared_lib]
+	else
+		if libtype == 'shared'
+			if host_machine.system() == 'windows'
+				dlg_args += '-DDLG_API=__declspec(dllexport)'
+			endif
+		elif libtype == 'static'
+			dep_args += '-DDLG_STATIC'
+		else
+			error('Unknown default_library type')
+		endif
+
+		libs += library('dlg',
+			'src/dlg/dlg.c',
+			c_args: dlg_args + common_args + dep_args,
+			dependencies: dep_threads,
+			install: true,
+			include_directories: inc)
+	endif
 
 	pkg = import('pkgconfig')
 	pkg.generate(
