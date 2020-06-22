@@ -53,26 +53,20 @@ dep_threads = dependency('threads')
 dep_args = []
 
 if buildlib
-	libtype = get_option('default_library')
-
-	static_prefix = []
-	static_suffix = []
-
-	if get_option('static_lib_suffix')
-		static_prefix = ''
-		static_suffix = 'lib'
-	endif
-
 	# TODO: temporary workaround, see https://github.com/mesonbuild/meson/issues/3304
 	# The problem is that on windows, function symbols must be declared
 	# differently when building a static library.
-	if libtype == 'both'
-		static_args = dlg_args + ['-DDLG_STATIC']
-		shared_args = dlg_args
-		if host_machine.system() == 'windows'
-			shared_args += ['-DDLG_API=__declspec(dllexport)']
-		endif
+	libtype = get_option('default_library')
+	build_static = libtype == 'both' or libtype == 'static'
+	build_shared = libtype == 'both' or libtype == 'shared'
 
+	static_args = dlg_args + ['-DDLG_STATIC']
+	shared_args = dlg_args
+	if host_machine.system() == 'windows'
+		shared_args += ['-DDLG_API=__declspec(dllexport)']
+	endif
+
+	if build_shared
 		shared_lib = shared_library('dlg',
 			'src/dlg/dlg.c',
 			c_args: shared_args + common_args + dep_args,
@@ -80,46 +74,32 @@ if buildlib
 			install: true,
 			include_directories: inc)
 
-		static_lib = static_library('dlg',
-			'src/dlg/dlg.c',
-			c_args: static_args + common_args + dep_args,
-			dependencies: dep_threads,
-			install: true,
-			name_prefix: static_prefix,
-			name_suffix: static_suffix,
-			include_directories: inc)
-
-		# when both library types are built, the declared dependency
-		# and generate pkgconfig file will contain the shared library,
-		# since that's the default way of linking in c.
-		# That's also why we don't add 'DLG_STATIC' to dep_args
-		message('When building both libraries, the shared one will be ' +
-			'used by default for dependency and pkgconfig file')
 		libs += [shared_lib]
-	else
-		prefix = []
-		suffix = []
+	endif
 
-		if libtype == 'shared'
-			if host_machine.system() == 'windows'
-				dlg_args += '-DDLG_API=__declspec(dllexport)'
-			endif
-		elif libtype == 'static'
-			dep_args += '-DDLG_STATIC'
-			prefix = static_prefix
-			suffix = static_suffix
+	if build_static
+		if get_option('static_msvc_libname')
+			static_lib = static_library('dlg',
+				'src/dlg/dlg.c',
+				c_args: static_args + common_args + dep_args,
+				dependencies: dep_threads,
+				install: true,
+				name_prefix: '',
+				name_suffix: '.lib',
+				include_directories: inc)
 		else
-			error('Unknown default_library type')
+			static_lib = static_library('dlg',
+				'src/dlg/dlg.c',
+				c_args: static_args + common_args + dep_args,
+				dependencies: dep_threads,
+				install: true,
+				include_directories: inc)
 		endif
 
-		libs += library('dlg',
-			'src/dlg/dlg.c',
-			c_args: dlg_args + common_args + dep_args,
-			dependencies: dep_threads,
-			name_prefix: prefix,
-			name_suffix: suffix,
-			install: true,
-			include_directories: inc)
+		if not build_shared
+			dep_args += static_args
+			libs += [static_lib]
+		endif
 	endif
 
 	pkg = import('pkgconfig')

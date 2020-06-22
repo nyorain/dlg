@@ -21,4 +21,4 @@ option('win_console', type: 'boolean', value: true)
 # Whether to generate 'dlg.lib' instead of 'libdlg.a' (as is mesons default)
 # for a static library build on windows. This might be needed/useful for
 # some MSVC setups, see https://github.com/nyorain/dlg/issues/3
-option('static_lib_suffix', type: 'boolean', value: false)
+option('static_msvc_libname', type: 'boolean', value: false)
