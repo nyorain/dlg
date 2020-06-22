@@ -55,6 +55,14 @@ dep_args = []
 if buildlib
 	libtype = get_option('default_library')
 
+	static_prefix = []
+	static_suffix = []
+
+	if get_option('static_lib_suffix')
+		static_prefix = ''
+		static_suffix = 'lib'
+	endif
+
 	# TODO: temporary workaround, see https://github.com/mesonbuild/meson/issues/3304
 	# The problem is that on windows, function symbols must be declared
 	# differently when building a static library.
@@ -77,6 +85,8 @@ if buildlib
 			c_args: static_args + common_args + dep_args,
 			dependencies: dep_threads,
 			install: true,
+			name_prefix: static_prefix,
+			name_suffix: static_suffix,
 			include_directories: inc)
 
 		# when both library types are built, the declared dependency
@@ -87,12 +97,17 @@ if buildlib
 			'used by default for dependency and pkgconfig file')
 		libs += [shared_lib]
 	else
+		prefix = []
+		suffix = []
+
 		if libtype == 'shared'
 			if host_machine.system() == 'windows'
 				dlg_args += '-DDLG_API=__declspec(dllexport)'
 			endif
 		elif libtype == 'static'
 			dep_args += '-DDLG_STATIC'
+			prefix = static_prefix
+			suffix = static_suffix
 		else
 			error('Unknown default_library type')
 		endif
@@ -101,6 +116,8 @@ if buildlib
 			'src/dlg/dlg.c',
 			c_args: dlg_args + common_args + dep_args,
 			dependencies: dep_threads,
+			name_prefix: prefix,
+			name_suffix: suffix,
 			install: true,
 			include_directories: inc)
 	endif
