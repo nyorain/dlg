@@ -100,6 +100,12 @@ DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data,
 		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]);
 
+
+// Generic output function. Used when user defines a macro DLG_FEATURE_FORMAT
+DLG_API void dlg_generic_output_formatted(dlg_generic_output_handler output, void* data,
+		unsigned int features, const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6], const char* dlg_log_format);
+
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
 // If stream is NULL uses stdout.

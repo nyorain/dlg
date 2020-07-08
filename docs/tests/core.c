@@ -37,6 +37,7 @@ struct {
 
 unsigned int gerror = 0;
 FILE* check_file;
+FILE* check_formatted_file;
 
 void custom_handler(const struct dlg_origin* origin, const char* string, void* data);
 
@@ -93,9 +94,11 @@ int main() {
 
 	dlg_set_handler(&custom_handler, &gdata);
 	check_file = fopen("dlg_test_output.txt", "w");
+	check_formatted_file = fopen( "dlg_test_formatted_output.txt","w" );
 	EXPECT(!dlg_is_tty(check_file));
 
-	dlg_fprintf(check_file, u8"beginning of (some utf-8: äüß) %s", "test output file\n");
+	dlg_fprintf(check_file, u8"beginning of (some utf-8: äüß) %s", "test output file with default layout of dlg_features\n");
+	dlg_fprintf(check_formatted_file, u8"beginning of (some utf-8: äüß) %s", "test output file with custom layout of dlg_features\n");
 
 	// checks
 	// logging
@@ -238,6 +241,7 @@ int main() {
 
 	// reset handler
 	fclose(check_file);
+	fclose(check_formatted_file);
 
 	dlg_set_handler(dlg_default_output, NULL);
 	gdata.fired = false;
@@ -341,6 +345,13 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 		}
 	}
 
-	unsigned int features = dlg_output_tags | dlg_output_style | dlg_output_time | dlg_output_file_line;
+	unsigned int features = dlg_output_tags | dlg_output_time | dlg_output_file_line | dlg_output_newline ;
+
+
 	dlg_generic_output_stream(check_file, features, origin, string, dlg_default_output_styles);
+
+	unsigned int features_o = dlg_output_file_line | dlg_output_func | dlg_output_tags | dlg_output_newline | dlg_output_time | dlg_output_time_msecs | dlg_output_threadsafe;
+	dlg_set_layout( "[ $ tags: {%t} $ time: %s%ms file: %l func: %F]    " );
+	dlg_generic_output_stream(check_formatted_file, features_o, origin, string, dlg_default_output_styles);
+	dlg_set_default_layout();
 }
