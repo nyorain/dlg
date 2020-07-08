@@ -240,6 +240,37 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		const char*, const char*, const char*);
 	DLG_API const char* dlg__strip_root_path(const char* file, const char* base);
 
+	// Use this function to change the layout of the dlg features in the log messages.
+	// See include/dlg/output.h for list of dlg_features.
+	// Use following conversion characters for representing the dlg features
+	// in the layout:
+	// %s  - 	dlg_output_time
+	// %ms - 	dlg_output_time_msecs 
+	// %t  - 	dlg_output_tags
+	// %F  -	dlg_output_func
+	// %l  -	dlg_output_file_line
+	//
+	// NOTE:
+	// Only the above specified conversion characters are converted to 
+	// respective dlg_features rest are written as it is. 
+	//
+	// Example: 
+	// dlg_set_features_layout("[ { %t } time: %s %l ]  ");
+	//					OR
+	// const char* format = "[ { %t } time: %s %l ]  ";
+	// dlg_set_features_layout( format );
+	//
+	// For tags: {tag1, tag2} time: 16:57:46 docs/tests/core.c:115 ]name: main() and tags: 
+	// "tag1","tag2" it will print the dlg_features in log messages like:
+	// [ tags: {tag1, tag2} time: 16:57:46 docs/tests/core.c:115 ]  log message
+	// 
+	DLG_API void dlg_set_layout( const char* layout );
+
+	// Use this function to reset the default format i.e. predefined layout
+	// which dlg uses for printing dlg_features.
+	//
+	DLG_API void dlg_set_default_layout();
+
 #endif // DLG_DISABLE
 
 // Untagged leveled logging

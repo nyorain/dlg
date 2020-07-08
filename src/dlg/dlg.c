@@ -395,6 +395,99 @@ void dlg_generic_output(dlg_generic_output_handler output, void* data,
 	}
 }
 
+void dlg_generic_output_formatted(dlg_generic_output_handler output, void* data,
+		unsigned int features, const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6], const char* dlg_features_layout ) {
+	
+	if(features & dlg_output_style) {
+		char buf[12];
+		dlg_escape_sequence(styles[origin->level], buf);
+		output(data, "%s", buf);
+	}
+
+	const char* ptr_one = dlg_features_layout;
+	const char* ptr_two = NULL;
+	const char* ptr_three = NULL;
+
+	for( ; *ptr_one; ptr_one++ ) {
+
+		if( *ptr_one == '%' )
+		{
+			ptr_two = ptr_one+1;
+			ptr_three = ptr_two+1;
+
+			if( *ptr_two == 's' && ( features & dlg_output_time ) )
+			{
+				time_t t = time(NULL);
+				struct tm tm_info;
+
+		#ifdef DLG_OS_WIN
+				if(localtime_s(&tm_info, &t)) {
+		#else
+				if(!localtime_r(&t, &tm_info)) {
+		#endif
+					output(data, "<DATE ERROR>");
+				} else {
+					char timebuf[32];
+					strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
+					output(data, "%s", timebuf);
+				}
+				ptr_one += 1 ;
+			}
+			else if( ( *ptr_two == 'm' && *ptr_three == 's' )  && ( features & dlg_output_time_msecs ) ) {
+				output(data, ":%d", get_msecs());
+				ptr_one += 2;
+			}
+			else if( *ptr_two == 't'  && ( features & dlg_output_tags ) ) {
+				bool first_tag = true;
+				for(const char** tags = origin->tags; *tags; ++tags) {
+					if(!first_tag) {
+						output(data, ", ");
+					}
+
+					output(data, "%s", *tags);
+					first_tag = false;
+				}
+				ptr_one += 1;
+			}
+			else if( *ptr_two == 'F'  && ( features & dlg_output_func ) ) {
+				output(data, "%s", origin->func);
+				ptr_one += 1;
+			}
+			else if( *ptr_two == 'l'  && ( features & dlg_output_file_line ) ) {
+				// file names might conatin non-ascii chars
+				output(data, "%s:%u", origin->file, origin->line);
+				ptr_one += 1;
+			}
+			else {
+				char c[2] = { '%', '\0' };
+				output( data, "%s", c );
+			}
+		}
+		else {
+			char c[2] = {'\0', '\0'};
+			c[0] = *ptr_one;
+			output( data, "%s", c );
+		}
+	}
+
+	if(origin->expr && string) {
+		output(data, "assertion '%s' failed: '%s'", origin->expr, string);
+	} else if(origin->expr) {
+		output(data, "assertion '%s' failed", origin->expr);
+	} else if(string) {
+		output(data, "%s", string);
+	}
+
+	if(features & dlg_output_style) {
+		output(data, "%s", dlg_reset_sequence);
+	}
+
+	if(features & dlg_output_newline) {
+		output(data, "\n");
+	}
+}
+
 struct buf {
 	char* buf;
 	size_t* size;
@@ -426,6 +519,17 @@ static void print_buf(void* dbuf, const char* format, ...) {
 	}
 }
 
+
+static const char* dlg_features_layout = NULL;
+void dlg_set_layout( const char* layout ) {
+	dlg_features_layout = layout;
+}
+
+void dlg_set_default_layout()
+{
+	dlg_features_layout = NULL;
+}
+
 void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 		const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
@@ -433,10 +537,20 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 		struct buf mbuf;
 		mbuf.buf = buf;
 		mbuf.size = size;
-		dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
+		if( dlg_features_layout == NULL ) {
+			dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
+		}
+		else {
+			dlg_generic_output_formatted(print_buf, &mbuf, features, origin, string, styles, dlg_features_layout );
+		}	
 	} else {
 		*size = 0;
-		dlg_generic_output(print_size, size, features, origin, string, styles);
+		if( dlg_features_layout == NULL ) {
+			dlg_generic_output(print_size, size, features, origin, string, styles);
+		}
+		else {
+			dlg_generic_output_formatted(print_size, size, features, origin, string, styles, dlg_features_layout );
+		}
 	}
 }
 
@@ -454,8 +568,12 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	if(features & dlg_output_threadsafe) {
 		lock_file(stream);
 	}
-
-	dlg_generic_output(print_stream, stream, features, origin, string, styles);
+	if( dlg_features_layout == NULL ) {
+		dlg_generic_output(print_stream, stream, features, origin, string, styles);
+	}
+	else {
+		dlg_generic_output_formatted(print_stream, stream, features, origin, string, styles, dlg_features_layout );
+	}
 
 	if(features & dlg_output_threadsafe) {
 		unlock_file(stream);
