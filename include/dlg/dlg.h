@@ -54,10 +54,12 @@
 #endif
 
 // Default tags applied to all logs/assertions (in the defining file).
-// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2", ``` (with the last comma!),
+// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2"```
 // or just nothing (as defaulted here)
 #ifndef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS
+	#define DLG_DEFAULT_TAGS_TERM NULL
+#else
+	#define DLG_DEFAULT_TAGS_TERM DLG_DEFAULT_TAGS, NULL
 #endif
 
 // The function used for formatting. Can have any signature, but must be callable with
@@ -89,9 +91,9 @@
 #ifdef __cplusplus
 	#include <initializer_list>
 	#define DLG_CREATE_TAGS(...) std::initializer_list<const char*> \
-		{DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}.begin()
+		{DLG_DEFAULT_TAGS_TERM, __VA_ARGS__, NULL}.begin()
 #else
-	#define DLG_CREATE_TAGS(...) (const char* const[]) {DLG_DEFAULT_TAGS NULL, __VA_ARGS__, NULL}
+	#define DLG_CREATE_TAGS(...) (const char* const[]) {DLG_DEFAULT_TAGS_TERM, __VA_ARGS__, NULL}
 #endif
 
 #ifdef __GNUC__
@@ -143,7 +145,8 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 
 	// Sets the handler that is responsible for formatting and outputting log calls.
 	// This function is not thread safe and the handler is set globally.
-	// The handler itself must not change dlg tags or call a dlg macro.
+	// The handler itself must not change dlg tags or call a dlg macro (if it
+	// does so, the provided string or tags array in 'origin' might get invalid).
 	// The handler can also be used for various other things such as dealing
 	// with failed assertions or filtering calls based on the passed tags.
 	// The default handler is dlg_default_output (see its doc for more info).

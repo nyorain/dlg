@@ -24,7 +24,7 @@ Up-to-date api
 #define DLG_BASE_PATH ""
 
 // Default tags applied to all logs/assertions (in the defining file).
-// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2",``` (with the last comma!),
+// Must be in format ```#define DLG_DEFAULT_TAGS "tag1", "tag2"```
 // or just nothing (as defaulted here)
 #define DLG_DEFAULT_TAGS
 

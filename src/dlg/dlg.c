@@ -675,7 +675,7 @@ void dlg__do_log(enum dlg_level lvl, const char* const* tags, const char* file, 
 
 #ifdef _MSC_VER
 // shitty msvc compatbility
-// meson gives us sane paths (separated by '/') while one MSVC,
+// meson gives us sane paths (separated by '/') while on MSVC,
 // __FILE__ contains a '\\' separator.
 static bool path_same(char a, char b) {
 	return (a == b) ||

@@ -72,7 +72,7 @@ add_project_arguments('-DDLG_BASE_PATH="' + '/'.join(source_root) + '/"', langua
 #define dlg_tag_global(tags, code) dlg_tag_base(true, tags, code)
 ```
 
-## Custom assert macro handler
+## Idea: Custom assert macro handler
 
 ```c
 // Can be specified to a custom assert handler/checker.
