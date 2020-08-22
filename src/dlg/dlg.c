@@ -6,6 +6,9 @@
 #define _POSIX_C_SOURCE 200809L
 #define _WIN32_WINNT 0x0600
 
+// Needed on windows so that we can use sprintf without warning.
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <dlg/output.h>
 #include <dlg/dlg.h>
 #include <wchar.h>
