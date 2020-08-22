@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* dlg_reset_sequence = "\033[0m";
+const char* const dlg_reset_sequence = "\033[0m";
 const struct dlg_style dlg_default_output_styles[] = {
 	{dlg_text_style_italic, dlg_color_green, dlg_color_none},
 	{dlg_text_style_dim, dlg_color_gray, dlg_color_none},
@@ -295,196 +295,152 @@ int dlg_styled_fprintf(FILE* stream, struct dlg_style style, const char* format,
 void dlg_generic_output(dlg_generic_output_handler output, void* data,
 		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
+	// We never print any dynamic content below so we can be sure at compile
+	// time that a buffer of size 64 is large enough.
+	char format_buf[64];
+	char* format = format_buf;
+
 	if(features & dlg_output_style) {
-		char buf[12];
-		dlg_escape_sequence(styles[origin->level], buf);
-		output(data, "%s", buf);
+		format += sprintf(format, "%%s");
 	}
 
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
-		output(data, "[");
+		format += sprintf(format, "[");
 	}
 
 	bool first_meta = true;
 	if(features & dlg_output_time) {
-		time_t t = time(NULL);
-		struct tm tm_info;
-
-#ifdef DLG_OS_WIN
-		if(localtime_s(&tm_info, &t)) {
-#else
-		if(!localtime_r(&t, &tm_info)) {
-#endif
-			output(data, "<DATE ERROR>");
-		} else {
-			char timebuf[32];
-			strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
-			output(data, "%s", timebuf);
-		}
-
+		format += sprintf(format, "%%h");
 		first_meta = false;
 	}
 
 	if(features & dlg_output_time_msecs) {
 		if(!first_meta) {
-			output(data, ":");
+			format += sprintf(format, ":");
 		}
 
-		output(data, "%d", get_msecs());
+		format += sprintf(format, "%%m");
 		first_meta = false;
 	}
 
 	if(features & dlg_output_file_line) {
 		if(!first_meta) {
-			output(data, " ");
+			format += sprintf(format, " ");
 		}
 
-		// file names might conatin non-ascii chars
-		output(data, "%s:%u", origin->file, origin->line);
+		format += sprintf(format, "%%o");
 		first_meta = false;
 	}
 
 	if(features & dlg_output_func) {
 		if(!first_meta) {
-			output(data, " ");
+			format += sprintf(format, " ");
 		}
 
-		// NOTE: use dlg_fprintf here? func names should really be ascii
-		// and can we otherwise be sure they are utf-8? probably not
-		output(data, "%s", origin->func);
+		format += sprintf(format, "%%f");
 		first_meta = false;
 	}
 
 	if(features & dlg_output_tags) {
 		if(!first_meta) {
-			output(data, " ");
+			format += sprintf(format, " ");
 		}
 
-		output(data, "{");
-		bool first_tag = true;
-		for(const char** tags = origin->tags; *tags; ++tags) {
-			if(!first_tag) {
-				output(data, ", ");
-			}
-
-			output(data, "%s", *tags);
-			first_tag = false;
-		}
-
-		output(data, "}");
+		format += sprintf(format, "{%%t}");
+		first_meta = false;
 	}
 
 	if(features & (dlg_output_time | dlg_output_file_line | dlg_output_tags | dlg_output_func)) {
-		output(data, "] ");
+		format += sprintf(format, "] ");
 	}
 
-	if(origin->expr && string) {
-		output(data, "assertion '%s' failed: '%s'", origin->expr, string);
-	} else if(origin->expr) {
-		output(data, "assertion '%s' failed", origin->expr);
-	} else if(string) {
-		output(data, "%s", string);
-	}
-
-	if(features & dlg_output_style) {
-		output(data, "%s", dlg_reset_sequence);
-	}
+	format += sprintf(format, "%%c");
 
 	if(features & dlg_output_newline) {
-		output(data, "\n");
+		format += sprintf(format, "\n");
 	}
+
+	*format = '\0';
+	dlg_generic_outputf(output, data, format_buf, origin, string, styles);
 }
 
-void dlg_generic_output_formatted(dlg_generic_output_handler output, void* data,
-		unsigned int features, const struct dlg_origin* origin, const char* string,
-		const struct dlg_style styles[6], const char* dlg_features_layout ) {
-	
-	if(features & dlg_output_style) {
-		char buf[12];
-		dlg_escape_sequence(styles[origin->level], buf);
-		output(data, "%s", buf);
-	}
-
-	const char* ptr_one = dlg_features_layout;
-	const char* ptr_two = NULL;
-	const char* ptr_three = NULL;
-
-	for( ; *ptr_one; ptr_one++ ) {
-
-		if( *ptr_one == '%' )
-		{
-			ptr_two = ptr_one+1;
-			ptr_three = ptr_two+1;
-
-			if( *ptr_two == 's' && ( features & dlg_output_time ) )
-			{
-				time_t t = time(NULL);
-				struct tm tm_info;
-
-		#ifdef DLG_OS_WIN
-				if(localtime_s(&tm_info, &t)) {
-		#else
-				if(!localtime_r(&t, &tm_info)) {
-		#endif
-					output(data, "<DATE ERROR>");
-				} else {
-					char timebuf[32];
-					strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
-					output(data, "%s", timebuf);
-				}
-				ptr_one += 1 ;
-			}
-			else if( ( *ptr_two == 'm' && *ptr_three == 's' )  && ( features & dlg_output_time_msecs ) ) {
-				output(data, ":%d", get_msecs());
-				ptr_one += 2;
-			}
-			else if( *ptr_two == 't'  && ( features & dlg_output_tags ) ) {
-				bool first_tag = true;
-				for(const char** tags = origin->tags; *tags; ++tags) {
-					if(!first_tag) {
-						output(data, ", ");
-					}
-
-					output(data, "%s", *tags);
-					first_tag = false;
-				}
-				ptr_one += 1;
-			}
-			else if( *ptr_two == 'F'  && ( features & dlg_output_func ) ) {
-				output(data, "%s", origin->func);
-				ptr_one += 1;
-			}
-			else if( *ptr_two == 'l'  && ( features & dlg_output_file_line ) ) {
-				// file names might conatin non-ascii chars
-				output(data, "%s:%u", origin->file, origin->line);
-				ptr_one += 1;
-			}
-			else {
-				char c[2] = { '%', '\0' };
-				output( data, "%s", c );
-			}
+void dlg_generic_outputf(dlg_generic_output_handler output, void* data,
+		const char* format_string, const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6]) {
+	bool reset_style = false;
+	for(const char* it = format_string; *it; it++) {
+		if(*it != '%') {
+			output(data, "%c", *it);
+			continue;
 		}
-		else {
-			char c[2] = {'\0', '\0'};
-			c[0] = *ptr_one;
-			output( data, "%s", c );
+
+		char next = *(it + 1); // must be valid since *it is not '\0'
+		if(next == 'h') {
+			time_t t = time(NULL);
+			struct tm tm_info;
+
+	#ifdef DLG_OS_WIN
+			if(localtime_s(&tm_info, &t)) {
+	#else
+			if(!localtime_r(&t, &tm_info)) {
+	#endif
+				output(data, "<DATE ERROR>");
+			} else {
+				char timebuf[32];
+				strftime(timebuf, sizeof(timebuf), "%H:%M:%S", &tm_info);
+				output(data, "%s", timebuf);
+			}
+			it++;
+		} else if(next == 'm') {
+			output(data, "%d", get_msecs());
+			it++;
+		} else if(next == 't') {
+			bool first_tag = true;
+			for(const char** tags = origin->tags; *tags; ++tags) {
+				if(!first_tag) {
+					output(data, ", ");
+				}
+
+				output(data, "%s", *tags);
+				first_tag = false;
+			}
+			++it;
+		} else if(next == 'f') {
+			output(data, "%s", origin->func);
+			++it;
+		} else if(next == 'o') {
+			output(data, "%s:%u", origin->file, origin->line);
+			++it;
+		} else if(next == 's') {
+			char buf[12];
+			dlg_escape_sequence(styles[origin->level], buf);
+			output(data, "%s", buf);
+			reset_style = true;
+			++it;
+		} else if(next == 'r') {
+			output(data, "%s", dlg_reset_sequence);
+			reset_style = false;
+			++it;
+		} else if(next == 'c') {
+			if(origin->expr && string) {
+				output(data, "assertion '%s' failed: '%s'", origin->expr, string);
+			} else if(origin->expr) {
+				output(data, "assertion '%s' failed", origin->expr);
+			} else if(string) {
+				output(data, "%s", string);
+			}
+			++it;
+		} else if(next == '%') {
+			output(data, "%s", "%");
+			++it;
+		} else {
+			// in this case it's a '%' without known format specifier following
+			output(data, "%s", "%");
 		}
 	}
 
-	if(origin->expr && string) {
-		output(data, "assertion '%s' failed: '%s'", origin->expr, string);
-	} else if(origin->expr) {
-		output(data, "assertion '%s' failed", origin->expr);
-	} else if(string) {
-		output(data, "%s", string);
-	}
-
-	if(features & dlg_output_style) {
+	if(reset_style) {
 		output(data, "%s", dlg_reset_sequence);
-	}
-
-	if(features & dlg_output_newline) {
-		output(data, "\n");
 	}
 }
 
@@ -519,17 +475,6 @@ static void print_buf(void* dbuf, const char* format, ...) {
 	}
 }
 
-
-static const char* dlg_features_layout = NULL;
-void dlg_set_layout( const char* layout ) {
-	dlg_features_layout = layout;
-}
-
-void dlg_set_default_layout()
-{
-	dlg_features_layout = NULL;
-}
-
 void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 		const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]) {
@@ -537,20 +482,24 @@ void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
 		struct buf mbuf;
 		mbuf.buf = buf;
 		mbuf.size = size;
-		if( dlg_features_layout == NULL ) {
-			dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
-		}
-		else {
-			dlg_generic_output_formatted(print_buf, &mbuf, features, origin, string, styles, dlg_features_layout );
-		}	
+		dlg_generic_output(print_buf, &mbuf, features, origin, string, styles);
 	} else {
 		*size = 0;
-		if( dlg_features_layout == NULL ) {
-			dlg_generic_output(print_size, size, features, origin, string, styles);
-		}
-		else {
-			dlg_generic_output_formatted(print_size, size, features, origin, string, styles, dlg_features_layout );
-		}
+		dlg_generic_output(print_size, size, features, origin, string, styles);
+	}
+}
+
+void dlg_generic_outputf_buf(char* buf, size_t* size, const char* format_string,
+		const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6]) {
+	if(buf) {
+		struct buf mbuf;
+		mbuf.buf = buf;
+		mbuf.size = size;
+		dlg_generic_outputf(print_buf, &mbuf, format_string, origin, string, styles);
+	} else {
+		*size = 0;
+		dlg_generic_outputf(print_size, size, format_string, origin, string, styles);
 	}
 }
 
@@ -568,21 +517,31 @@ void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	if(features & dlg_output_threadsafe) {
 		lock_file(stream);
 	}
-	if( dlg_features_layout == NULL ) {
-		dlg_generic_output(print_stream, stream, features, origin, string, styles);
+
+	dlg_generic_output(print_stream, stream, features, origin, string, styles);
+	if(features & dlg_output_threadsafe) {
+		unlock_file(stream);
 	}
-	else {
-		dlg_generic_output_formatted(print_stream, stream, features, origin, string, styles, dlg_features_layout );
+}
+
+void dlg_generic_outputf_stream(FILE* stream, const char* format_string,
+		const struct dlg_origin* origin, const char* string,
+		const struct dlg_style styles[6], bool lock_stream) {
+	stream = stream ? stream : stdout;
+	if(lock_stream) {
+		lock_file(stream);
 	}
 
-	if(features & dlg_output_threadsafe) {
+	dlg_generic_outputf(print_stream, stream, format_string, origin, string, styles);
+	if(lock_stream) {
 		unlock_file(stream);
 	}
 }
 
 void dlg_default_output(const struct dlg_origin* origin, const char* string, void* data) {
 	FILE* stream = data ? (FILE*) data : stdout;
-	unsigned int features = dlg_output_file_line | dlg_output_newline |
+	unsigned int features = dlg_output_file_line |
+		dlg_output_newline |
 		dlg_output_threadsafe;
 
 #ifdef DLG_DEFAULT_OUTPUT_ALWAYS_COLOR

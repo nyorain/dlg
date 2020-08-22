@@ -5,6 +5,7 @@ tests = [
 	['disabledc', 'disabled.c', []],
 	['disabledcpp', 'disabled.cpp', []],
 	['threads', 'threads.cpp', [dep_threads]],
+	['outputf', 'outputf.cpp', []],
 ]
 
 foreach test : tests

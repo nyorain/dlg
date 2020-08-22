@@ -350,8 +350,8 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 
 	dlg_generic_output_stream(check_file, features, origin, string, dlg_default_output_styles);
 
-	unsigned int features_o = dlg_output_file_line | dlg_output_func | dlg_output_tags | dlg_output_newline | dlg_output_time | dlg_output_time_msecs | dlg_output_threadsafe;
-	dlg_set_layout( "[ $ tags: {%t} $ time: %s%ms file: %l func: %F]    " );
-	dlg_generic_output_stream(check_formatted_file, features_o, origin, string, dlg_default_output_styles);
-	dlg_set_default_layout();
+	// unsigned int features_o = dlg_output_file_line | dlg_output_func | dlg_output_tags | dlg_output_newline | dlg_output_time | dlg_output_time_msecs | dlg_output_threadsafe;
+	// dlg_set_layout( "[ $ tags: {%t} $ time: %s%ms file: %l func: %F]    " );
+	// dlg_generic_output_stream(check_formatted_file, features_o, origin, string, dlg_default_output_styles);
+	// dlg_set_default_layout();
 }

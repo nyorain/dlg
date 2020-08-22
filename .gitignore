@@ -4,3 +4,6 @@ build
 old
 *.sublime*
 android_cross.txt
+compile_commands.json
+.vscode
+.clangd

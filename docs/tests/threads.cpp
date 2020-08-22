@@ -5,7 +5,7 @@
 
 // mainly used to test that everything works multithreaded and that
 // there will be no leaks
-void test() 
+void test()
 {
 	dlg_info("main");
 	dlg_info("initing thread 2");
@@ -31,7 +31,7 @@ void test()
 
 	for(auto i = 0u; i < 10; ++i) {
 		std::this_thread::sleep_for(std::chrono::nanoseconds(i * 10));
-		dlg_info("Did he said something already?");
+		dlg_info("Did he say something already?");
 	}
 
 	dlg_info("Hopefully he said something by now...");
@@ -42,11 +42,11 @@ void test()
 
 int main() {
 	// default handler (threadsafe)
-	std::cout << " =================== 1 ==================== \n";
+	std::cout << " =================== 1 (threadsafe) ==================== \n";
 	test();
 
 	// custom handler (threadsafe)
-	std::cout << " =================== 2 ==================== \n";
+	std::cout << " =================== 2 (threadsafe) ==================== \n";
 	auto tid1 = std::this_thread::get_id();
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
 		auto t = (std::this_thread::get_id() == tid1) ? "thread-1: " : "thread-2: ";
@@ -56,7 +56,7 @@ int main() {
 	test();
 
 	// custom handler (not threadsafe)
-	std::cout << " =================== 3 ==================== \n";
+	std::cout << " =================== 3 (not threasafe) ==================== \n";
 	dlg::set_handler([&](const struct dlg_origin& origin, const char* str){
 		unsigned int features = dlg_output_file_line | dlg_output_newline |
 			dlg_output_style;
