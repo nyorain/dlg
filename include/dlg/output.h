@@ -100,11 +100,22 @@ DLG_API void dlg_generic_output(dlg_generic_output_handler output, void* data,
 		unsigned int features, const struct dlg_origin* origin, const char* string,
 		const struct dlg_style styles[6]);
 
-
-// Generic output function. Used when user defines a macro DLG_FEATURE_FORMAT
-DLG_API void dlg_generic_output_formatted(dlg_generic_output_handler output, void* data,
-		unsigned int features, const struct dlg_origin* origin, const char* string,
-		const struct dlg_style styles[6], const char* dlg_log_format);
+// Generic output function, using a format string instead of feature flags.
+// Use following conversion characters:
+// %h - output the time in H:M:S format
+// %m - output the time in milliseconds
+// %t - output the full list of tags, comma separated
+// %f - output the function name noted in the origin
+// %o - output the file:line of the origin
+// %s - print the appropriate style escape sequence.
+// %r - print the escape sequence to reset the style.
+// %c - The content of the log/assert
+// %% - print the '%' character
+// Only the above specified conversion characters are valid, the rest are
+// written as it is.
+DLG_API void dlg_generic_outputf(dlg_generic_output_handler output, void* data,
+		const char* format_string, const struct dlg_origin* origin,
+		const char* string, const struct dlg_style styles[6]);
 
 // Generic output function. Used by the default output handler and might be useful
 // for custom output handlers (that don't want to manually format the output).
@@ -115,12 +126,18 @@ DLG_API void dlg_generic_output_formatted(dlg_generic_output_handler output, voi
 DLG_API void dlg_generic_output_stream(FILE* stream, unsigned int features,
 	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
+DLG_API void dlg_generic_outputf_stream(FILE* stream, const char* format_string,
+	const struct dlg_origin* origin, const char* string,
+	const struct dlg_style styles[6], bool lock_stream);
 
 // Generic output function (see dlg_generic_output) that uses a buffer instead of
 // a stream. buf must at least point to *size bytes. Will set *size to the number
 // of bytes written (capped to the given size), if buf == NULL will set *size
 // to the needed size. The size parameter must not be NULL.
 DLG_API void dlg_generic_output_buf(char* buf, size_t* size, unsigned int features,
+	const struct dlg_origin* origin, const char* string,
+	const struct dlg_style styles[6]);
+DLG_API void dlg_generic_outputf_buf(char* buf, size_t* size, const char* format_string,
 	const struct dlg_origin* origin, const char* string,
 	const struct dlg_style styles[6]);
 
@@ -136,7 +153,7 @@ DLG_API bool dlg_is_tty(FILE* stream);
 DLG_API void dlg_escape_sequence(struct dlg_style style, char buf[12]);
 
 // The reset style escape sequence.
-DLG_API extern const char* dlg_reset_sequence;
+DLG_API extern const char* const dlg_reset_sequence;
 
 // Just returns true without other effect on non-windows systems or if dlg
 // was compiled without the win_console option.
