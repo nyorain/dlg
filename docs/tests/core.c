@@ -216,32 +216,6 @@ int main() {
 	EXPECT(!dlg_remove_tag("gt", __func__));
 	EXPECT(!dlg_remove_tag("gt", NULL));
 
-	// default
-	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS "d1", "d2", "d3",
-
-	const char* t5[] = {"d1", "d2", "d3", NULL};
-	gdata.tags = t5;
-	gdata.fired = false;
-	dlg_trace(".");
-	dlg_assertm(false, "%d", 42);
-	EXPECT(gdata.fired);
-
-	// all together
-	const char* t6[] = {"d1", "d2", "d3", "lt2", "gt2", "tag3", "tag4", NULL};
-	gdata.tags = t6;
-	gdata.fired = false;
-	dlg_add_tag("lt2", __func__);
-	dlg_add_tag("gt2", NULL);
-	dlg_tracet(("tag3", "tag4"), ".");
-	dlg_assertt(("tag3", "tag4"), false);
-	EXPECT(gdata.fired);
-	EXPECT(dlg_remove_tag("lt2", __func__));
-	EXPECT(dlg_remove_tag("gt2", NULL));
-
-	#undef DLG_DEFAULT_TAGS
-	#define DLG_DEFAULT_TAGS
-
 	gdata.tags = t1;
 	gdata.fired = false;
 	dlg_warn(".");

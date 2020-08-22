@@ -1,4 +1,4 @@
-#define DLG_DEFAULT_TAGS "dlg",
+#define DLG_DEFAULT_TAGS "dlg"
 
 #include <dlg/dlg.hpp>
 #include <dlg/output.h>
