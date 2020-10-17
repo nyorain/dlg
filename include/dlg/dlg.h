@@ -143,6 +143,11 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	#define dlg_assertlm(level, expr, ...) // assert with message
 	#define dlg_assertltm(level, tags, expr, ...) // assert with tags & message
 
+	// assert as abvoe, additionally execute 'code' on failure
+	#define dlg_assertltm_or(level, tags, expr, code, ...)
+	#define dlg_assertlm_or(level, expr, code, ...)
+	#define dlg_assertl_or(level, expr, code)
+
 	// Sets the handler that is responsible for formatting and outputting log calls.
 	// This function is not thread safe and the handler is set globally.
 	// The handler itself must not change dlg tags or call a dlg macro (if it
@@ -226,6 +231,24 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
+	// assert with tags & message, execute 'code' on failure
+	#define dlg_assertltm_or(level, tags, expr, code, ...) \
+		do if(level >= DLG_ASSERT_LEVEL && !(expr)) {\
+			dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
+				__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
+			code; \
+		} while(false)
+	#define dlg_assertlm_or(level, expr, code, ...) \
+		do if(level >= DLG_ASSERT_LEVEL && !(expr)) {\
+			dlg__do_log(level, NULL, DLG_FILE, __LINE__, __func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
+			code; \
+		} while(false)
+	#define dlg_assertl_or(level, expr, code) \
+		do if(level >= DLG_ASSERT_LEVEL && !(expr)) {\
+			dlg__do_log(level, NULL, DLG_FILE, __LINE__, __func__, NULL, #expr); \
+			code; \
+		} while(false)
+
 	DLG_API void dlg_set_handler(dlg_handler handler, void* data);
 	DLG_API dlg_handler dlg_get_handler(void** data);
 	DLG_API void dlg_default_output(const struct dlg_origin*, const char* string, void*);
@@ -262,6 +285,9 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 #define dlg_assertt(tags, expr) dlg_assertlt(DLG_DEFAULT_ASSERT, tags, expr)
 #define dlg_assertm(expr, ...) dlg_assertlm(DLG_DEFAULT_ASSERT, expr, __VA_ARGS__)
 #define dlg_asserttm(tags, expr, ...) dlg_assertltm(DLG_DEFAULT_ASSERT, tags, expr, __VA_ARGS__)
+
+#define dlg_assert_or(expr, code) dlg_assertl_or(DLG_DEFAULT_ASSERT, expr, code)
+#define dlg_assertm_or(expr, code, ...) dlg_assertlm_or(DLG_DEFAULT_ASSERT, expr, code, __VA_ARGS__)
 
 #ifdef __cplusplus
 }
