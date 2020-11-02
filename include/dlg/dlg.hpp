@@ -13,6 +13,8 @@
 // TODO: override the default (via undef) if a dlg.h was included before this file?
 #ifndef DLG_FMT_FUNC
 	#define DLG_FMT_FUNC ::dlg::detail::tlformat
+#elif defined(INC_DLG_DLG_H_)
+	#warning "dlg.h was included before dlg.hpp, not overriding DLG_FMT_FUNC"
 #endif
 
 #include <dlg/dlg.h>
