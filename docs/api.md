@@ -73,6 +73,14 @@ Up-to-date api
 #define dlg_assertt(tags, expr)
 #define dlg_assertm(expr, ...)
 #define dlg_asserttm(tags, expr, ...)
+
+// If conditions that execute code and potentially log on failure
+#define dlg_assertltm_or(level, tags, expr, code, ...)
+#define dlg_assertlm_or(level, expr, code, ...)
+#define dlg_assertl_or(level, expr, code)
+
+#define dlg_assert_or(expr, code)
+#define dlg_assertm_or(expr, code, ...)
 ```
 
 ## Other

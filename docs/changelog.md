@@ -1,3 +1,8 @@
+2020-11-02
+	- Move documentation from disabled functions to actual implementations,
+	  may be more useful
+	- Add (improved) dlg_assert_or utility macros
+
 2019-12-07
 	- Add dlg_get_handler to allow handler chaining for debugging
 	  [api addition]
