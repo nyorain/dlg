@@ -55,7 +55,7 @@ static dlg_handler g_handler = dlg_default_output;
 static void* g_data = NULL;
 
 static void dlg_free_data(void* data);
-static struct dlg_data* dlg_create_data();
+static struct dlg_data* dlg_create_data(void);
 
 // platform-specific
 #if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__) || defined(__MACH__)
@@ -66,7 +66,7 @@ static struct dlg_data* dlg_create_data();
 
 	static pthread_key_t dlg_data_key;
 
-	static void dlg_main_cleanup() {
+	static void dlg_main_cleanup(void) {
 		void* data = pthread_getspecific(dlg_data_key);
 		if(data) {
 			dlg_free_data(data);
@@ -104,7 +104,7 @@ static struct dlg_data* dlg_create_data();
 		return isatty(fileno(stream));
 	}
 
-	static unsigned get_msecs() {
+	static unsigned get_msecs(void) {
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		return tv.tv_usec;
