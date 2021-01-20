@@ -184,7 +184,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		} (void) NULL
 	#define dlg_assertl_or(level, expr, code) \
 		if(!(expr)) {\
-			if(level >= DLG_ASSERT_LEVEL) {\
+			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, NULL, DLG_FILE, __LINE__, __func__, NULL, #expr); \
 			code; \
 		} (void) NULL
