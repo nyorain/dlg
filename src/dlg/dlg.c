@@ -395,7 +395,7 @@ void dlg_generic_outputf(dlg_generic_output_handler output, void* data,
 			}
 			it++;
 		} else if(next == 'm') {
-			output(data, "%d", get_msecs());
+			output(data, "%06d", get_msecs());
 			it++;
 		} else if(next == 't') {
 			bool first_tag = true;
