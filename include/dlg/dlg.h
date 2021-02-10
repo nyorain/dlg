@@ -161,33 +161,34 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
-	// If (expr) does not hold, always executes 'code' (no matter what
+	// If (expr) does not evaluate to true, always executes 'code' (no matter what
 	// DLG_ASSERT_LEVEL is or if dlg is disabled or not).
 	// When dlg is enabled and the level is greater or equal to DLG_ASSERT_LEVEL,
-	// logs the fails assertion.
+	// logs the failed assertion.
 	// Example usages:
 	//   dlg_assertl_or(dlg_level_warn, data != nullptr, return);
 	//   dlg_assertlm_or(dlg_level_fatal, data != nullptr, return, "Data must not be null");
-	#define dlg_assertltm_or(level, tags, expr, code, ...) \
+	//   dlg_assert_or(data != nullptr, logError(); return false);
+	#define dlg_assertltm_or(level, tags, expr, code, ...) do {\
 		if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 					__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
 			code; \
-		} (void) NULL
-	#define dlg_assertlm_or(level, expr, code, ...) \
+		} while(false)
+	#define dlg_assertlm_or(level, expr, code, ...) do {\
 		if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, NULL, DLG_FILE, __LINE__,  \
 					__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
 			code; \
-		} (void) NULL
-	#define dlg_assertl_or(level, expr, code) \
+		} while(false)
+	#define dlg_assertl_or(level, expr, code) do {\
 		if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, NULL, DLG_FILE, __LINE__, __func__, NULL, #expr); \
 			code; \
-		} (void) NULL
+		} while(false)
 
 	// Sets the handler that is responsible for formatting and outputting log calls.
 	// This function is not thread safe and the handler is set globally.
@@ -250,9 +251,9 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	#define dlg_assertlm(level, expr, ...) // assert with message
 	#define dlg_assertltm(level, tags, expr, ...) // assert with tags & message
 
-	#define dlg_assertltm_or(level, tags, expr, code, ...) if(!expr) code; (void) NULL
-	#define dlg_assertlm_or(level, expr, code, ...) if(!expr) code; (void) NULL
-	#define dlg_assertl_or(level, expr, code) if(!expr) code; (void) NULL
+	#define dlg_assertltm_or(level, tags, expr, code, ...) if(!expr) { code; } (void) NULL
+	#define dlg_assertlm_or(level, expr, code, ...) if(!expr) { code; } (void) NULL
+	#define dlg_assertl_or(level, expr, code) if(!expr) { code; } (void) NULL
 
 	inline void dlg_set_handler(dlg_handler handler, void* data) {
 		(void) handler;
