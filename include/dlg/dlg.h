@@ -169,22 +169,19 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	//   dlg_assertl_or(dlg_level_warn, data != nullptr, return);
 	//   dlg_assertlm_or(dlg_level_fatal, data != nullptr, return, "Data must not be null");
 	//   dlg_assert_or(data != nullptr, logError(); return false);
-	#define dlg_assertltm_or(level, tags, expr, code, ...) do {\
-		if(!(expr)) {\
+	#define dlg_assertltm_or(level, tags, expr, code, ...) do if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 					__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
 			code; \
 		} while(false)
-	#define dlg_assertlm_or(level, expr, code, ...) do {\
-		if(!(expr)) {\
+	#define dlg_assertlm_or(level, expr, code, ...) do if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, NULL, DLG_FILE, __LINE__,  \
 					__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr); \
 			code; \
 		} while(false)
-	#define dlg_assertl_or(level, expr, code) do {\
-		if(!(expr)) {\
+	#define dlg_assertl_or(level, expr, code) do if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, NULL, DLG_FILE, __LINE__, __func__, NULL, #expr); \
 			code; \
