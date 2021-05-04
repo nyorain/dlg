@@ -161,11 +161,11 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
 		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
 
-	#define dlg__assert_or(level, tags, expr, code, msg) do if(!(expr)) {\
+	#define dlg__assert_or(level, tags, expr, code, msg) if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
 				dlg__do_log(level, tags, DLG_FILE, __LINE__, __func__, msg, #expr); \
 			code; \
-		} while(false)
+		} (void) NULL
 
 
 	// Sets the handler that is responsible for formatting and outputting log calls.
@@ -229,7 +229,7 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	#define dlg_assertlm(level, expr, ...) // assert with message
 	#define dlg_assertltm(level, tags, expr, ...) // assert with tags & message
 
-	#define dlg__assert_or(level, tags, expr, code, msg) do if(!(expr)) { code; } while(false)
+	#define dlg__assert_or(level, tags, expr, code, msg) if(!(expr)) { code; } (void) NULL
 
 	inline void dlg_set_handler(dlg_handler handler, void* data) {
 		(void) handler;
