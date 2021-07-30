@@ -1,4 +1,4 @@
-[![Appveyor status](https://ci.appveyor.com/api/projects/status/an3isk91jx8vmwh6?svg=true)](https://ci.appveyor.com/project/nyorain/dlg/branch/master)
+[![Appveyor status](https://ci.appveyor.com/api/projects/status/an3isk91jx8vmwh6/branch/master?svg=true)](https://ci.appveyor.com/project/nyorain/dlg/branch/master)
 [![Travis Status](https://travis-ci.org/nyorain/dlg.svg?branch=master)](https://travis-ci.org/nyorain/dlg)
 
 dlg
