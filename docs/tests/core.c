@@ -205,19 +205,18 @@ int main() {
 	const char* t4[] = {"lt", "gt", NULL};
 	gdata.tags = t4;
 	gdata.fired = false;
-	dlg_add_tag("lt", __func__);
-	dlg_add_tag("gt", NULL);
+	const char* lt = "lt";
+	const char* gt = "gt";
+	dlg_add_tag(lt, __func__);
+	dlg_add_tag(gt, NULL);
 	dlg_info(".");
 	EXPECT(gdata.fired);
 	dlg_assert(false);
 
-	// TODO: strictly speaking not correct but we know it works...
-	// both params should be same pointer to const char*
-	// this was done below the same (wrong) way...
-	EXPECT(dlg_remove_tag("lt", __func__));
-	EXPECT(dlg_remove_tag("gt", NULL));
-	EXPECT(!dlg_remove_tag("gt", __func__));
-	EXPECT(!dlg_remove_tag("gt", NULL));
+	EXPECT(dlg_remove_tag(lt, __func__));
+	EXPECT(dlg_remove_tag(gt, NULL));
+	EXPECT(!dlg_remove_tag(lt, __func__));
+	EXPECT(!dlg_remove_tag(gt, NULL));
 
 	gdata.tags = t1;
 	gdata.fired = false;
@@ -226,17 +225,19 @@ int main() {
 	EXPECT(gdata.fired);
 
 	// correct scope of added tags
-	const char* t7[] = {"gt3", NULL};
-	dlg_add_tag("lt3", __func__);
-	dlg_add_tag("gt3", NULL);
+	const char* lt3 = "lt3";
+	const char* gt3 = "gt3";
+	const char* t7[] = {gt3, NULL};
+	dlg_add_tag(lt3, __func__);
+	dlg_add_tag(gt3, NULL);
 	gdata.fired = false;
 	gdata.tags = t7;
 	foo_log();
 	EXPECT(gdata.fired);
 	foo_assert();
-	EXPECT(dlg_remove_tag("lt3", __func__));
-	EXPECT(dlg_remove_tag("gt3", NULL));
-	EXPECT(!dlg_remove_tag("lt3", __func__));
+	EXPECT(dlg_remove_tag(lt3, __func__));
+	EXPECT(dlg_remove_tag(gt3, NULL));
+	EXPECT(!dlg_remove_tag(lt3, __func__));
 	EXPECT(!dlg_remove_tag("non-existent", NULL));
 
 	// reset handler
@@ -280,11 +281,7 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 		++gerror;
 	}
 
-#ifdef _MSC_VER // srsly, why am i even supporting msvc?!
-	if(strcmp(origin->file, "docs\\tests\\core.c") != 0) {
-#else
 	if(strcmp(origin->file, "docs/tests/core.c") != 0) {
-#endif
 		printf("$$$ handler: invalid file %s [%d]\n", origin->file, origin->line);
 		++gerror;
 	}
