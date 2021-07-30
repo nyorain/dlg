@@ -207,15 +207,16 @@ int main() {
 	gdata.fired = false;
 	const char* lt = "lt";
 	const char* gt = "gt";
-	dlg_add_tag(lt, __func__);
+	const char* func = __func__;
+	dlg_add_tag(lt, func);
 	dlg_add_tag(gt, NULL);
 	dlg_info(".");
 	EXPECT(gdata.fired);
 	dlg_assert(false);
 
-	EXPECT(dlg_remove_tag(lt, __func__));
+	EXPECT(dlg_remove_tag(lt, func));
 	EXPECT(dlg_remove_tag(gt, NULL));
-	EXPECT(!dlg_remove_tag(lt, __func__));
+	EXPECT(!dlg_remove_tag(lt, func));
 	EXPECT(!dlg_remove_tag(gt, NULL));
 
 	gdata.tags = t1;
@@ -228,16 +229,16 @@ int main() {
 	const char* lt3 = "lt3";
 	const char* gt3 = "gt3";
 	const char* t7[] = {gt3, NULL};
-	dlg_add_tag(lt3, __func__);
+	dlg_add_tag(lt3, func);
 	dlg_add_tag(gt3, NULL);
 	gdata.fired = false;
 	gdata.tags = t7;
 	foo_log();
 	EXPECT(gdata.fired);
 	foo_assert();
-	EXPECT(dlg_remove_tag(lt3, __func__));
+	EXPECT(dlg_remove_tag(lt3, func));
 	EXPECT(dlg_remove_tag(gt3, NULL));
-	EXPECT(!dlg_remove_tag(lt3, __func__));
+	EXPECT(!dlg_remove_tag(lt3, func));
 	EXPECT(!dlg_remove_tag("non-existent", NULL));
 
 	// reset handler
