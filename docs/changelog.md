@@ -1,3 +1,8 @@
+2021-12-22
+	- Rework how DLG_DISABLE works for api non-macro functions.
+	  The functions are now independent from DLG_DISABLE to prevent
+	  linking issues when DLG_DISABLE is defined
+
 2020-11-02
 	- Move documentation from disabled functions to actual implementations,
 	  may be more useful
