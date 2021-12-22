@@ -13,7 +13,7 @@ well-documented logging interface in a few hundred lines*):
 
 There are 3 headers:
 
-- [<dlg/dlg.h>](include/dlg/dlg.h) (around 230 loc): Everything you need, no dependencies
+- [<dlg/dlg.h>](include/dlg/dlg.h) (around 280 loc): Everything you need, no dependencies
 - [<dlg/output.h>](include/dlg/output.h) (around 150 loc): Utilities for implementing custom output handlers
 - [<dlg/dlg.hpp>](include/dlg/dlg.hpp) (around 330 loc): Modern C++11 utilities, typesafe formatter
 

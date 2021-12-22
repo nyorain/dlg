@@ -177,51 +177,6 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 			code; \
 		} (void) NULL
 
-
-	// Sets the handler that is responsible for formatting and outputting log calls.
-	// This function is not thread safe and the handler is set globally.
-	// The handler itself must not change dlg tags or call a dlg macro (if it
-	// does so, the provided string or tags array in 'origin' might get invalid).
-	// The handler can also be used for various other things such as dealing
-	// with failed assertions or filtering calls based on the passed tags.
-	// The default handler is dlg_default_output (see its doc for more info).
-	// If using c++ make sure the registered handler cannot throw e.g. by
-	// wrapping everything into a try-catch blog.
-	DLG_API void dlg_set_handler(dlg_handler handler, void* data);
-
-	// Returns the currently active dlg handler and sets `data` to
-	// its user data pointer. `data` must not be NULL.
-	// Useful to create handler chains.
-	// This function is not threadsafe, i.e. retrieving the handler while
-	// changing it from another thread is unsafe.
-	// See `dlg_set_handler`.
-	DLG_API dlg_handler dlg_get_handler(void** data);
-
-	// The default output handler.
-	// Only use this to reset the output handler, prefer to use
-	// dlg_generic_output (from output.h) which this function simply calls.
-	// It also flushes the stream used and correctly outputs even from multiple threads.
-	DLG_API void dlg_default_output(const struct dlg_origin*, const char* string, void*);
-
-	// Adds the given tag associated with the given function to the thread specific list.
-	// If func is not NULL the tag will only applied to calls from the same function.
-	// Remove the tag again calling dlg_remove_tag (with exactly the same pointers!).
-	// Does not check if the tag is already present.
-	DLG_API void dlg_add_tag(const char* tag, const char* func);
-
-	// Removes a tag added with dlg_add_tag (has no effect for tags no present).
-	// The pointers must be exactly the same pointers that were supplied to dlg_add_tag,
-	// this function will not check using strcmp. When the same tag/func combination
-	// is added multiple times, this function remove exactly one candidate, it is
-	// undefined which. Returns whether a tag was found (and removed).
-	DLG_API bool dlg_remove_tag(const char* tag, const char* func);
-
-	// Returns the thread-specific buffer and its size for dlg.
-	// The buffer should only be used by formatting functions.
-	// The buffer can be reallocated and the size changed, just make sure
-	// to update both values correctly.
-	DLG_API char** dlg_thread_buffer(size_t** size);
-
 	// - Private interface: not part of the abi/api but needed in macros -
 	// Formats the given format string and arguments as printf would, uses the thread buffer.
 	DLG_API const char* dlg__printf_format(const char* format, ...) DLG_PRINTF_ATTRIB(1, 2);
@@ -240,39 +195,53 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	#define dlg_assertltm(level, tags, expr, ...) // assert with tags & message
 
 	#define dlg__assert_or(level, tags, expr, code, msg) if(!(expr)) { code; } (void) NULL
-
-	inline void dlg_set_handler(dlg_handler handler, void* data) {
-		(void) handler;
-		(void) data;
-	}
-
-	inline dlg_handler dlg_get_handler(void** data) {
-		*data = NULL;
-		return NULL;
-	}
-
-	inline void dlg_default_output(const struct dlg_origin* o, const char* str, void* data) {
-		(void) o;
-		(void) str;
-		(void) data;
-	}
-
-	inline void dlg_add_tag(const char* tag, const char* func) {
-		(void) tag;
-		(void) func;
-	}
-
-	inline bool dlg_remove_tag(const char* tag, const char* func) {
-		(void) tag;
-		(void) func;
-		return true;
-	}
-
-	inline char** dlg_thread_buffer(size_t** size) {
-		(void) size;
-		return NULL;
-	}
 #endif // DLG_DISABLE
+
+// The API below is independent from DLG_DISABLE
+
+// Sets the handler that is responsible for formatting and outputting log calls.
+// This function is not thread safe and the handler is set globally.
+// The handler itself must not change dlg tags or call a dlg macro (if it
+// does so, the provided string or tags array in 'origin' might get invalid).
+// The handler can also be used for various other things such as dealing
+// with failed assertions or filtering calls based on the passed tags.
+// The default handler is dlg_default_output (see its doc for more info).
+// If using c++ make sure the registered handler cannot throw e.g. by
+// wrapping everything into a try-catch blog.
+DLG_API void dlg_set_handler(dlg_handler handler, void* data);
+
+// The default output handler.
+// Only use this to reset the output handler, prefer to use
+// dlg_generic_output (from output.h) which this function simply calls.
+// It also flushes the stream used and correctly outputs even from multiple threads.
+DLG_API void dlg_default_output(const struct dlg_origin*, const char* string, void*);
+
+// Returns the currently active dlg handler and sets `data` to
+// its user data pointer. `data` must not be NULL.
+// Useful to create handler chains.
+// This function is not threadsafe, i.e. retrieving the handler while
+// changing it from another thread is unsafe.
+// See `dlg_set_handler`.
+DLG_API dlg_handler dlg_get_handler(void** data);
+
+// Adds the given tag associated with the given function to the thread specific list.
+// If func is not NULL the tag will only applied to calls from the same function.
+// Remove the tag again calling dlg_remove_tag (with exactly the same pointers!).
+// Does not check if the tag is already present.
+DLG_API void dlg_add_tag(const char* tag, const char* func);
+
+// Removes a tag added with dlg_add_tag (has no effect for tags no present).
+// The pointers must be exactly the same pointers that were supplied to dlg_add_tag,
+// this function will not check using strcmp. When the same tag/func combination
+// is added multiple times, this function remove exactly one candidate, it is
+// undefined which. Returns whether a tag was found (and removed).
+DLG_API bool dlg_remove_tag(const char* tag, const char* func);
+
+// Returns the thread-specific buffer and its size for dlg.
+// The buffer should only be used by formatting functions.
+// The buffer can be reallocated and the size changed, just make sure
+// to update both values correctly.
+DLG_API char** dlg_thread_buffer(size_t** size);
 
 // Untagged leveled logging
 #define dlg_trace(...) dlg_log(dlg_level_trace, __VA_ARGS__)
