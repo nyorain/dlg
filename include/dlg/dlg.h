@@ -85,6 +85,13 @@
 	#endif
 #endif
 
+// This macro is used when an assertion fails. It gets the source expression
+// and can return an alternative (that must stay alive).
+// Mainly useful to execute something on failed assertion.
+#ifndef DLG_FAILED_ASSERTION_TEXT
+	#define DLG_FAILED_ASSERTION_TEXT(x) x
+#endif
+
 // - utility -
 // two methods needed since cplusplus does not support compound literals
 // and c does not support uniform initialization/initializer lists
@@ -151,19 +158,22 @@ typedef void(*dlg_handler)(const struct dlg_origin* origin, const char* string, 
 	//   dlg_asserttlm(("tag1), dlg_level_warning, data != nullptr, "Data must not be null");
 	//   dlg_assertlm(dlg_level_error, data != nullptr, "Data must not be null");
 	#define dlg_assertl(level, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__, NULL, #expr)
+		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__, NULL, \
+			DLG_FAILED_ASSERTION_TEXT(#expr))
 	#define dlg_assertlt(level, tags, expr) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
-		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, NULL, #expr)
+		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__, __func__, NULL, \
+			DLG_FAILED_ASSERTION_TEXT(#expr))
 	#define dlg_assertlm(level, expr, ...) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
 		dlg__do_log(level, DLG_CREATE_TAGS(NULL), DLG_FILE, __LINE__, __func__,  \
-		DLG_FMT_FUNC(__VA_ARGS__), #expr)
+			DLG_FMT_FUNC(__VA_ARGS__), DLG_FAILED_ASSERTION_TEXT(#expr))
 	#define dlg_assertltm(level, tags, expr, ...) if(level >= DLG_ASSERT_LEVEL && !(expr)) \
 		dlg__do_log(level, DLG_CREATE_TAGS tags, DLG_FILE, __LINE__,  \
-		__func__, DLG_FMT_FUNC(__VA_ARGS__), #expr)
+			__func__, DLG_FMT_FUNC(__VA_ARGS__), DLG_FAILED_ASSERTION_TEXT(#expr))
 
 	#define dlg__assert_or(level, tags, expr, code, msg) if(!(expr)) {\
 			if(level >= DLG_ASSERT_LEVEL) \
-				dlg__do_log(level, tags, DLG_FILE, __LINE__, __func__, msg, #expr); \
+				dlg__do_log(level, tags, DLG_FILE, __LINE__, __func__, msg, \
+					DLG_FAILED_ASSERTION_TEXT(#expr)); \
 			code; \
 		} (void) NULL
 
