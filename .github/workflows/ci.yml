@@ -1,0 +1,151 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - "**.c"
+      - "**.cpp"
+      - "**.h"
+      - "**.hpp"
+      - "**.inl"
+      - "**meson.build"
+      - "**ci.yml"
+  pull_request:
+    branches: [ master ]
+    paths:
+      - "**.c"
+      - "**.cpp"
+      - "**.h"
+      - "**.hpp"
+      - "**.inl"
+      - "*meson.build"
+
+jobs:
+  linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - run: pip install meson ninja
+    - run: sudo apt-get -y update
+    - name: Install deps
+      run: sudo apt-get -y -f install valgrind
+    - run: meson setup build/ --backend=ninja -Dsample=true -Dtests=true 
+      env:
+        CC: gcc
+    - run: meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
+
+  linux-gcc-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - run: pip install meson ninja
+    - run: sudo apt-get -y update
+    - name: Install deps
+      run: sudo apt-get -y -f install valgrind
+    - run: meson setup build/ --backend=ninja -Dsample=true -Dtests=true -Dbuildtype=release
+      env:
+        CC: gcc
+    - run: meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
+
+  linux-clang:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - name: Set up Clang
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: latest
+    - run: pip install meson ninja
+    - run: sudo apt-get -y update
+    - name: Install deps
+      run: sudo apt-get -y -f install valgrind
+    - run: meson setup build/ --backend=ninja -Dsample=true -Dtests=true 
+    - run: meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
+
+  linux-clang-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - name: Set up Clang
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: latest
+    - run: pip install meson ninja
+    - run: sudo apt-get -y update
+    - name: Install deps
+      run: sudo apt-get -y -f install valgrind
+    - run: meson setup build/ --backend=ninja -Dsample=true -Dtests=true -Dbuildtype=release 
+    - run: meson test -C build --wrapper 'valgrind --leak-check=full --error-exitcode=1' --print-errorlogs
+
+  # See https://dvdhrm.github.io/2021/04/21/meson-msvc-github-actions/
+  windows-ninja:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - run: pip install ninja
+    # TODO, tmp workaround: See https://github.com/mesonbuild/meson/pull/9918
+    - run: pip install git+https://github.com/frida/meson.git@f7f25b19a8d71cebf8e2934733eb041eb6862eee
+    - name: Prepare MSVC
+      uses: bus1/cabuild/action/msdevshell@v1
+      with:
+        architecture: x64
+    - run: meson setup build/ --backend=ninja -Dsample=true -Dtests=true
+    - run: meson test -C build/ -v
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - run: pip install ninja
+    # TODO, tmp workaround: See https://github.com/mesonbuild/meson/pull/9918
+    - run: pip install git+https://github.com/frida/meson.git@f7f25b19a8d71cebf8e2934733eb041eb6862eee
+    - name: Prepare MSVC
+      uses: bus1/cabuild/action/msdevshell@v1
+      with:
+        architecture: x64
+    - run: meson setup build/ -Dsample=true -Dtests=true
+    - run: meson test -C build/ -v
+
+  windows-release:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - run: pip install ninja
+    # TODO, tmp workaround: See https://github.com/mesonbuild/meson/pull/9918
+    - run: pip install git+https://github.com/frida/meson.git@f7f25b19a8d71cebf8e2934733eb041eb6862eee
+    - name: Prepare MSVC
+      uses: bus1/cabuild/action/msdevshell@v1
+      with:
+        architecture: x64
+    - run: meson setup build/ -Dsample=true -Dtests=true -Dbuildtype=release
+    - run: meson test -C build/ -v
+    - name: Upload binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: Windows Binaries
+        path: |
+          build/dlg.dll  
+          build/dlg.lib  
+          build/dlg.pdb  
