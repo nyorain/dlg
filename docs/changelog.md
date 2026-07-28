@@ -1,3 +1,19 @@
+2026-07-28
+    - dlg.hpp: When compiled with C++20 (we check for __cpp_lib_format),
+      will now default to using std::format for formatting.
+      NOTE: THIS IS A BREAKING CHANGE when you relied on the default C++
+      fmt-like formatter before as that was using std::ostream operators
+      for custom types and std::format uses the std::formatter api.
+      Therefore, custom types might not be able to be formatted as they
+      used to.
+    - When DLG_FORMAT_DEFAULT_REPLACE is defined, the new formatter
+      is not used (to not break compatibility). 
+    - If you want to avoid the new default formatter, either manually
+      define DLG_FMT_FUNC to the old default (::dlg::detail::tlformat)
+      or use "#define DLG_FORMAT_DEFAULT_REPLACE {}".
+      Must be done BEFORE including dlg.hpp anywhere (preferable via
+      the build system for cpp files)
+
 2023-04-16 (cumulative)
 	- Add `dlg_assert_or` macro that will execute code in case the 
 	  assertion fails.
