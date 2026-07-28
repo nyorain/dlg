@@ -12,7 +12,15 @@
 // The new formatting function works like a type-safe version of printf, see dlg::format.
 // TODO: override the default (via undef) if a dlg.h was included before this file?
 #ifndef DLG_FMT_FUNC
-	#define DLG_FMT_FUNC ::dlg::detail::tlformat
+	#if defined(__cpp_lib_format) && !defined(DLG_FORMAT_DEFAULT_REPLACE)
+		// Use std::format for formatting
+		// If you use C++20 but don't want this, define DLG_FORMAT_DEFAULT_REPLACE
+		#include <format>
+		#define DLG_FMT_FUNC ::dlg::stdtlformat
+	#else
+		// pre-C++20 path: use simple custom ostream-based formatter
+		#define DLG_FMT_FUNC ::dlg::detail::tlformat
+	#endif
 #elif defined(INC_DLG_DLG_H_)
 	#warning "dlg.h was included before dlg.hpp, not overriding DLG_FMT_FUNC"
 #endif
@@ -322,6 +330,90 @@ std::string generic_output(unsigned int features,
 	ret.pop_back(); // terminating null-char
 	return ret;
 }
+
+#if defined(__cpp_lib_format)
+
+// Use std::format
+struct TLBufferOutputIterator {
+	char** buf;
+	size_t* size;
+	size_t off {};
+
+	TLBufferOutputIterator() { buf = dlg_thread_buffer(&size); }
+	char& operator*() {
+		if (off >= *size) {
+			auto nsize = 2 * *size;
+			auto nbuf = static_cast<char*>(std::malloc(nsize));
+			std::memcpy(nbuf, buf, *size);
+			std::free(buf);
+			*buf = nbuf;
+			*size = nsize;
+		}
+
+		return (*buf)[off];
+	}
+
+	TLBufferOutputIterator& operator+=(int add) { off += add; return *this; }
+	TLBufferOutputIterator& operator-=(int add) { off -= add; return *this; }
+
+	TLBufferOutputIterator operator+(int add) {
+		auto ret = *this;
+		ret.off += add;
+		return ret;
+	}
+	TLBufferOutputIterator operator-(int add) {
+		auto ret = *this;
+		ret.off += add;
+		return ret;
+	}
+	TLBufferOutputIterator& operator++() {
+		++off;
+		return *this;
+	}
+
+	TLBufferOutputIterator operator++(int) {
+		auto copy = *this;
+		++off;
+		return copy;
+	}
+
+	TLBufferOutputIterator& operator--() {
+		--off;
+	}
+
+	TLBufferOutputIterator operator--(int) {
+		auto copy = *this;
+		--off;
+		return copy;
+	}
+};
+
+inline bool operator==(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
+	return a.buf == b.buf && a.off == b.off;
+}
+inline bool operator!=(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
+	return a.buf != b.buf || a.off != b.off;
+}
+inline int operator-(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
+	return a.off - b.off;
+}
+
+// At least one argument to dis-ambiguate with overload below
+template<typename Arg, typename... Args>
+const char* stdtlformat(std::format_string<Arg, Args...> fmt,
+		Arg&& first, Args&&... args) {
+	std::format_to(TLBufferOutputIterator(), fmt,
+		std::forward<Arg>(first), std::forward<Args>(args)...);
+	return *dlg_thread_buffer(nullptr);
+}
+
+// To allow dlg_error(msg)
+template<typename... Args>
+const char* stdtlformat(StringParam p) {
+	return p.str;
+}
+
+#endif // __cpp_lib_format
 
 } // namespace dlg
 
