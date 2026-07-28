@@ -13,7 +13,7 @@ void pre_handler(const struct dlg_origin* origin, const char* string, void* data
 	old_handler(origin, string, old_data);
 }
 
-int main() {
+int main(void) {
 	old_handler = dlg_get_handler(&old_data);
 	dlg_set_handler(pre_handler, NULL);
 	dlg_assertm(false, "Obviously false");

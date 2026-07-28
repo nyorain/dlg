@@ -2,7 +2,7 @@
 
 // NOTE: could really be extended.
 // Maybe make the c++ example only showing the c++ specific features
-int main() {
+int main(void) {
 	dlg_warn("This is a warning. If on a console, it will be printed yellow");
 	dlg_error("Errors are red. Colors work even on windows consoles");
 	dlg_assertm(1 == 2, "Well, this assertion will probably %s...", "fail");

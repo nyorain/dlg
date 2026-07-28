@@ -21,7 +21,7 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 	gdata.fired = true;
 }
 
-int main()
+int main(void)
 {
 	dlg_set_handler(custom_handler, NULL);
 	dlg_info("well, this is not printed");
