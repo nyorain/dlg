@@ -13,9 +13,9 @@ well-documented logging interface in a few hundred lines*):
 
 There are 3 headers:
 
-- [<dlg/dlg.h>](include/dlg/dlg.h) (around 280 loc): Everything you need, no dependencies
-- [<dlg/output.h>](include/dlg/output.h) (around 150 loc): Utilities for implementing custom output handlers
-- [<dlg/dlg.hpp>](include/dlg/dlg.hpp) (around 330 loc): Modern C++11 utilities, typesafe formatter
+- [<dlg/dlg.h>](include/dlg/dlg.h) (around 290 loc): Everything you need, no dependencies
+- [<dlg/output.h>](include/dlg/output.h) (around 170 loc): Utilities for implementing custom output handlers
+- [<dlg/dlg.hpp>](include/dlg/dlg.hpp) (around 390 loc): Modern C++11 utilities, typesafe formatter. Can use `std::format` with C++20.
 
 You can either build dlg.c as library or include it directly into your project
 (nothing else needed).
@@ -23,7 +23,7 @@ The name stands for some kind of super clever word mixture of the words 'debug'
 and 'log' (think of something yourself, duh). Uses meson as build system, but
 you don't really need a build system for this after all.
 
-## Show me something fancy already
+## Show me something already
 
 Besides a simple look into the [headers](include/dlg), have a look into the
 __[synopsis](docs/api.md)__ and additional documentation for the latest release.
