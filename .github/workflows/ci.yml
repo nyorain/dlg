@@ -142,7 +142,7 @@ jobs:
     - run: meson setup build/ -Dsample=true -Dtests=true -Dbuildtype=release
     - run: meson test -C build/ -v
     - name: Upload binaries
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7      
       with:
         name: Windows Binaries
         path: |

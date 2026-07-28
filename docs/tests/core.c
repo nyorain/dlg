@@ -46,10 +46,10 @@ void custom_handler(const struct dlg_origin* origin, const char* string, void* d
 	++gerror; \
 }
 
-void foo_log();
-void foo_assert();
+void foo_log(void);
+void foo_assert(void);
 
-int main() {
+int main(void) {
 	printf("__FILE__: %s\n", __FILE__);
 
 	dlg_log(dlg_level_trace, "trace %d", 1);
@@ -267,11 +267,11 @@ int main() {
 	return gerror;
 }
 
-void foo_log() {
+void foo_log(void) {
 	dlg_info("log call from foo");
 }
 
-void foo_assert() {
+void foo_assert(void) {
 	dlg_assert(false);
 }
 
