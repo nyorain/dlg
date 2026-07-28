@@ -2,6 +2,18 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <sstream>
+
+#if defined(__cpp_lib_format) && __cplusplus < 202302L
+template<>
+struct std::formatter<std::thread::id> : std::formatter<std::string> {
+    auto format(const std::thread::id& id, std::format_context& ctx) const {
+		std::stringstream ss;
+		ss << id;
+		return std::format_to(ctx.out(), "{}", ss.str());
+    }
+};
+#endif // defined(__cpp_lib_format)
 
 // mainly used to test that everything works multithreaded and that
 // there will be no leaks

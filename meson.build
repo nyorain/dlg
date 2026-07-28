@@ -3,7 +3,7 @@ project('dlg', ['c', 'cpp'],
 	meson_version: '>=0.58.0',
 	default_options: [
 		'c_std=c11',
-		'cpp_std=c++11',
+		'cpp_std=c++20',
 		'warning_level=3',
 		'werror=true'])
 

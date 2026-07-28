@@ -36,6 +36,8 @@ int main() {
 	EXPECT(dlg::detail::tlformat("ỦŤ₣8 ťéŝť ŝťяïאָğ")
 		== std::string("ỦŤ₣8 ťéŝť ŝťяïאָğ"));
 
+	dlg_infot(("main"), "Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... Just a really long message..... {}, that's the answer!", 23);
+
 	// TODO: more output.h testing
 	{
 		dlg_origin origin {};
@@ -98,14 +100,14 @@ int main() {
 	}
 
 	expected = {};
-	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {} {}", "sick", std::setw(10), 69);
+	dlg_warnt(("tag2", "tag3"), "Just some {} warning: {}", "sick", 69);
 	dlg_assertm(true, "eeeehhh... {}", "wtf");
 
 	dlg_info("We can also just log objects");
 	dlg_info(42);
 
-	str = "should fire... {} {}";
-	dlg_assertm(false, str, "!", 24);
+	constexpr auto cstr = "should fire...{} {}";
+	dlg_assertm(false, cstr, "!", 24);
 
 	auto entered = false;
 	dlg_checkt(("checked"), {

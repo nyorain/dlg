@@ -5,6 +5,13 @@
 #ifndef INC_DLG_DLG_HPP_
 #define INC_DLG_DLG_HPP_
 
+#if __cplusplus >= 202002L
+	#include <version> // for __cpp_lib_format
+#endif
+
+#if defined(__cpp_lib_format)
+	#include <format>
+#endif
 
 // By default this header automatically uses a different, typesafe formatting
 // function. Make sure to never include dlg.h in your translation unit before
@@ -15,7 +22,6 @@
 	#if defined(__cpp_lib_format) && !defined(DLG_FORMAT_DEFAULT_REPLACE)
 		// Use std::format for formatting
 		// If you use C++20 but don't want this, define DLG_FORMAT_DEFAULT_REPLACE
-		#include <format>
 		#define DLG_FMT_FUNC ::dlg::stdtlformat
 	#else
 		// pre-C++20 path: use simple custom ostream-based formatter
@@ -345,8 +351,8 @@ struct TLBufferOutputIterator {
 		if (off >= *size) {
 			auto nsize = 2 * *size;
 			auto nbuf = static_cast<char*>(std::malloc(nsize));
-			std::memcpy(nbuf, buf, *size);
-			std::free(buf);
+			std::memcpy(nbuf, *buf, *size);
+			std::free(*buf);
 			*buf = nbuf;
 			*size = nsize;
 		}
@@ -370,15 +376,20 @@ struct TLBufferOutputIterator {
 template<typename Arg, typename... Args>
 const char* stdtlformat(std::format_string<Arg, Args...> fmt,
 		Arg&& first, Args&&... args) {
-	std::format_to(TLBufferOutputIterator(), fmt,
+	auto out = std::format_to(TLBufferOutputIterator(), fmt,
 		std::forward<Arg>(first), std::forward<Args>(args)...);
+	*out = 0;
 	return *dlg_thread_buffer(nullptr);
 }
 
 // To allow dlg_error(msg)
-template<typename... Args>
-const char* stdtlformat(StringParam p) {
+inline const char* stdtlformat(StringParam p) {
 	return p.str;
+}
+
+template<typename Arg>
+inline const char* stdtlformat(Arg&& p) {
+	return stdtlformat("{}", std::forward<Arg>(p));
 }
 
 #endif // __cpp_lib_format
