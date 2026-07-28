@@ -335,6 +335,7 @@ std::string generic_output(unsigned int features,
 
 // Use std::format
 struct TLBufferOutputIterator {
+	using difference_type = std::ptrdiff_t;
 	char** buf;
 	size_t* size;
 	size_t off {};
@@ -353,19 +354,6 @@ struct TLBufferOutputIterator {
 		return (*buf)[off];
 	}
 
-	TLBufferOutputIterator& operator+=(int add) { off += add; return *this; }
-	TLBufferOutputIterator& operator-=(int add) { off -= add; return *this; }
-
-	TLBufferOutputIterator operator+(int add) {
-		auto ret = *this;
-		ret.off += add;
-		return ret;
-	}
-	TLBufferOutputIterator operator-(int add) {
-		auto ret = *this;
-		ret.off += add;
-		return ret;
-	}
 	TLBufferOutputIterator& operator++() {
 		++off;
 		return *this;
@@ -376,27 +364,7 @@ struct TLBufferOutputIterator {
 		++off;
 		return copy;
 	}
-
-	TLBufferOutputIterator& operator--() {
-		--off;
-	}
-
-	TLBufferOutputIterator operator--(int) {
-		auto copy = *this;
-		--off;
-		return copy;
-	}
 };
-
-inline bool operator==(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
-	return a.buf == b.buf && a.off == b.off;
-}
-inline bool operator!=(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
-	return a.buf != b.buf || a.off != b.off;
-}
-inline int operator-(const TLBufferOutputIterator& a, const TLBufferOutputIterator& b) {
-	return a.off - b.off;
-}
 
 // At least one argument to dis-ambiguate with overload below
 template<typename Arg, typename... Args>
