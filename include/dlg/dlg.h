@@ -1,4 +1,4 @@
-// Copyright (c) 2019 nyorain
+// Copyright (c) 2026 Jan Kelling
 // Distributed under the Boost Software License, Version 1.0.
 // See accompanying file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt
 
@@ -47,7 +47,7 @@
 	#define DLG_FILE dlg__strip_root_path(__FILE__, DLG_BASE_PATH)
 
 	// the base path stripped from __FILE__. If you don't override DLG_FILE set this to
-	// the project root to make 'main.c' from '/some/bullshit/main.c'
+	// the project root to make 'main.c' from '/some/path/main.c'
 	#ifndef DLG_BASE_PATH
 		#define DLG_BASE_PATH ""
 	#endif
